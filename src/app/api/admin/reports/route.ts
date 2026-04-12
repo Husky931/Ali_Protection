@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { eq, desc } from "drizzle-orm";
 
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { db } from "@/lib/db";
+import { reports } from "@/lib/db/schema";
 
 const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -17,18 +19,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("reports")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
+  try {
+    const data = await db
+      .select()
+      .from(reports)
+      .where(eq(reports.status, "pending"))
+      .orderBy(desc(reports.created_at));
 
-  if (error) {
+    return NextResponse.json({ data });
+  } catch {
     return NextResponse.json(
       { error: "Failed to load reports." },
       { status: 500 },
     );
   }
-
-  return NextResponse.json({ data });
 }

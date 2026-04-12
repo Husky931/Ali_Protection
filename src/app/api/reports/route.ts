@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { db } from "@/lib/db";
+import { reports } from "@/lib/db/schema";
 import { ReportInsert } from "@/lib/reportTypes";
 
 const requiredTextFields = [
@@ -46,21 +47,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin.from("reports").insert({
-    platform: body.platform?.trim() || "alibaba",
-    seller_name: body.seller_name.trim(),
-    seller_url: body.seller_url.trim(),
-    product_name: body.product_name.trim(),
-    product_url: body.product_url.trim(),
-    quantity,
-    total_price: totalPrice,
-    currency: body.currency.trim(),
-    industry: body.industry.trim(),
-    details: body.details.trim(),
-    status: "pending",
-  });
-
-  if (error) {
+  try {
+    await db.insert(reports).values({
+      platform: body.platform?.trim() || "alibaba",
+      seller_name: body.seller_name.trim(),
+      seller_url: body.seller_url.trim(),
+      product_name: body.product_name.trim(),
+      product_url: body.product_url.trim(),
+      quantity: String(quantity),
+      total_price: String(totalPrice),
+      currency: body.currency.trim(),
+      industry: body.industry.trim(),
+      details: body.details.trim(),
+      status: "pending",
+    });
+  } catch {
     return NextResponse.json(
       { error: "Failed to submit report." },
       { status: 500 },

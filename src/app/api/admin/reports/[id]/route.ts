@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { db } from "@/lib/db";
+import { reports } from "@/lib/db/schema";
 import { ReportStatus } from "@/lib/reportTypes";
 
 const adminPassword = process.env.ADMIN_PASSWORD;
@@ -36,12 +38,12 @@ export async function PATCH(
     );
   }
 
-  const { error } = await supabaseAdmin
-    .from("reports")
-    .update({ status: body.status, updated_at: new Date().toISOString() })
-    .eq("id", id);
-
-  if (error) {
+  try {
+    await db
+      .update(reports)
+      .set({ status: body.status, updated_at: new Date() })
+      .where(eq(reports.id, id));
+  } catch {
     return NextResponse.json(
       { error: "Failed to update report." },
       { status: 500 },

@@ -55,17 +55,17 @@ export function ReportForm() {
     }
 
     setStatus("success");
-    setMessage("Report submitted. It will appear after review.");
+    setMessage("Thank you for sharing your story! Your report will be reviewed and published soon.");
     setForm(initialState);
   };
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-      <div className="flex flex-wrap gap-3">
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Platform
+    <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+      <div className="flex flex-wrap gap-4">
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Platform</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="platform"
             value={form.platform}
             onChange={handleChange}
@@ -73,21 +73,21 @@ export function ReportForm() {
             required
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Industry
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Industry</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="industry"
             value={form.industry}
             onChange={handleChange}
-            placeholder="Electronics"
+            placeholder="Electronics, Textiles, etc."
             required
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Seller (company) name
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Seller (Company) Name</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="seller_name"
             value={form.seller_name}
             onChange={handleChange}
@@ -95,21 +95,21 @@ export function ReportForm() {
             required
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Seller (company) URL
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Seller (Company) URL</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="seller_url"
             value={form.seller_url}
             onChange={handleChange}
-            placeholder="https://"
+            placeholder="https://..."
             required
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Product name
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Product Name</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="product_name"
             value={form.product_name}
             onChange={handleChange}
@@ -117,21 +117,21 @@ export function ReportForm() {
             required
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Product URL
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Product URL</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="product_url"
             value={form.product_url}
             onChange={handleChange}
-            placeholder="https://"
+            placeholder="https://..."
             required
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Quantity
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Quantity</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="quantity"
             value={form.quantity}
             onChange={handleChange}
@@ -141,10 +141,10 @@ export function ReportForm() {
             required
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Total price
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Total Price</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="total_price"
             value={form.total_price}
             onChange={handleChange}
@@ -154,44 +154,50 @@ export function ReportForm() {
             required
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-sm sm:w-[48%]">
-          Currency
+        <label className="flex w-full flex-col gap-2 text-sm sm:w-[48%]">
+          <span className="font-medium text-ink">Currency</span>
           <input
-            className="rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+            className="rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             name="currency"
             value={form.currency}
             onChange={handleChange}
-            placeholder="USD"
+            placeholder="USD, EUR, etc."
             required
           />
         </label>
       </div>
-      <label className="flex flex-col gap-1 text-sm">
-        Details
+      <label className="flex flex-col gap-2 text-sm">
+        <span className="font-medium text-ink">Your Story</span>
+        <span className="text-xs text-muted">
+          Describe what happened with your order. Include details about the product,
+          seller communication, and any issues you encountered.
+        </span>
         <textarea
-          className="min-h-[120px] rounded border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted"
+          className="min-h-[140px] rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
           name="details"
           value={form.details}
           onChange={handleChange}
-          placeholder="What happened?"
+          placeholder="Tell us what happened with your order..."
           required
         />
       </label>
       <button
-        className="w-full rounded cursor-pointer bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-black"
+        className="w-full rounded-lg cursor-pointer bg-ink px-6 py-4 text-base font-semibold text-white transition hover:bg-black hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
         type="submit"
         disabled={status === "loading"}
       >
-        {status === "loading" ? "Submitting..." : "Submit report"}
+        {status === "loading" ? "Submitting Your Story..." : "Share Your Story"}
       </button>
       {message ? (
-        <p
-          className={`text-sm ${
-            status === "error" ? "text-danger" : "text-success"
+        <div
+          className={`rounded-lg p-4 text-sm ${
+            status === "error"
+              ? "bg-red-50 text-danger"
+              : "bg-green-50 text-success"
           }`}
         >
           {message}
-        </p>
+        </div>
       ) : null}
     </form>
   );
