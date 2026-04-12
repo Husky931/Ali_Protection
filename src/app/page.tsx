@@ -30,36 +30,62 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-primary text-ink">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-primary to-orange-50 px-6 py-20 sm:py-28">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-8 text-center lg:flex-row lg:gap-12 lg:text-left">
-          <div className="flex flex-1 flex-col gap-6">
-            <h1 className="text-4xl font-bold leading-tight text-ink sm:text-5xl lg:text-6xl">
-              Have you been scammed by a bad deal on{" "}
-              <span className="text-orange-600">Alibaba</span>?
+      {/* Hero Section – Mobile */}
+      <section className="bg-gradient-to-br from-orange-50 via-primary to-orange-50 lg:hidden">
+        <div className="w-full">
+          <Image
+            src="/hero-alibaba.png"
+            alt="Alibaba seller with high rating but negative buyer reviews"
+            width={1612}
+            height={1464}
+            className="h-auto w-full"
+            priority
+          />
+        </div>
+        <div className="flex flex-col items-center gap-5 px-6 pb-12 pt-6 text-center">
+          <h1 className="text-3xl font-bold leading-tight text-ink sm:text-4xl">
+            The place on the web to report a bad{" "}
+            <span className="text-orange-600">Alibaba</span> deal
+          </h1>
+          <p className="text-base text-muted sm:text-lg">
+            Share your story. Protect others from fraudulent sellers.
+          </p>
+          <a
+            href="#share-story"
+            className="w-fit rounded-lg bg-ink px-7 py-3.5 text-base font-semibold text-white transition hover:bg-black hover:shadow-lg"
+          >
+            Share Your Story
+          </a>
+        </div>
+      </section>
+
+      {/* Hero Section – Desktop */}
+      <section className="hidden bg-gradient-to-br from-orange-50 via-primary to-orange-50 lg:block">
+        <div className="mx-auto flex w-full max-w-7xl items-center gap-10 px-8 py-20 xl:gap-14">
+          <div className="flex w-1/4 shrink-0 flex-col gap-6">
+            <h1 className="text-4xl font-bold leading-tight text-ink xl:text-5xl">
+              The place on the web to report a bad{" "}
+              <span className="text-orange-600">Alibaba</span> deal
             </h1>
-            <p className="text-lg text-muted sm:text-xl">
-              You&apos;re not alone. Share your story and help protect others from
-              fraudulent sellers.
+            <p className="text-base text-muted xl:text-lg">
+              Share your story. Protect others from fraudulent sellers.
             </p>
             <a
               href="#share-story"
-              className="w-fit cursor-pointer self-center rounded-lg bg-ink px-8 py-4 text-lg font-semibold text-white transition hover:bg-black hover:shadow-lg lg:self-start"
+              className="w-fit rounded-lg bg-ink px-7 py-3.5 text-base font-semibold text-white transition hover:bg-black hover:shadow-lg"
             >
               Share Your Story
             </a>
           </div>
-          <div className="relative flex flex-1 items-center justify-center">
-            <div className="relative h-64 w-full max-w-md overflow-hidden rounded-2xl bg-orange-100 shadow-xl sm:h-80">
-              <Image
-                src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80"
-                alt="Person feeling frustrated with online shopping"
-                fill
-                className="object-cover"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-            </div>
+          <div className="relative flex-1 overflow-hidden rounded-2xl shadow-2xl">
+            <Image
+              src="/hero-alibaba.png"
+              alt="Alibaba seller with high rating but negative buyer reviews"
+              width={1200}
+              height={800}
+              className="h-auto w-full"
+              priority
+            />
           </div>
         </div>
       </section>
@@ -73,7 +99,7 @@ export default async function Home() {
             </h2>
             <div className="prose prose-lg max-w-none text-ink">
               <p className="text-base leading-relaxed text-muted sm:text-lg">
-                I know firsthand what it feels like to be scammed on Alibaba. After
+                I know first hand what it feels like to be scammed on Alibaba. After
                 placing an order and sending payment, I received a product that was
                 completely different from what was advertised—poor quality, wrong
                 specifications, and nothing like the seller promised. When I tried to
