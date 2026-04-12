@@ -3,7 +3,7 @@ import { Report } from "@/lib/reportTypes";
 import { db } from "@/lib/db";
 import { reports } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import Image from "next/image";
+import { HeroImage } from "@/components/HeroImage";
 
 export const dynamic = "force-dynamic";
 
@@ -33,14 +33,7 @@ export default async function Home() {
       {/* Hero Section – Mobile */}
       <section className="bg-gradient-to-br from-orange-50 via-primary to-orange-50 lg:hidden">
         <div className="w-full">
-          <Image
-            src="/hero-alibaba.png"
-            alt="Alibaba seller with high rating but negative buyer reviews"
-            width={1612}
-            height={1464}
-            className="h-auto w-full"
-            priority
-          />
+          <HeroImage width={1612} height={1464} className="h-auto w-full" />
         </div>
         <div className="flex flex-col items-center gap-5 px-6 pb-12 pt-6 text-center">
           <h1 className="text-3xl font-bold leading-tight text-ink sm:text-4xl">
@@ -78,14 +71,7 @@ export default async function Home() {
             </a>
           </div>
           <div className="relative flex-1 overflow-hidden rounded-2xl shadow-2xl">
-            <Image
-              src="/hero-alibaba.png"
-              alt="Alibaba seller with high rating but negative buyer reviews"
-              width={1200}
-              height={800}
-              className="h-auto w-full"
-              priority
-            />
+            <HeroImage width={1200} height={800} className="h-auto w-full" />
           </div>
         </div>
       </section>
