@@ -1,9 +1,10 @@
-import { ReportForm } from "@/components/ReportForm";
 import { Report } from "@/lib/reportTypes";
 import { db } from "@/lib/db";
 import { reports } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { HeroImage } from "@/components/HeroImage";
+import { SearchBox } from "@/components/SearchBox";
+import { FloatingReportButton } from "@/components/FloatingReportButton";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ async function getApprovedReports(): Promise<Report[]> {
 }
 
 export default async function Home() {
-  const reports = await getApprovedReports();
+  const approvedReports = await getApprovedReports();
 
   return (
     <div className="min-h-screen bg-primary text-ink">
@@ -44,10 +45,10 @@ export default async function Home() {
             Share your story. Protect others from fraudulent sellers.
           </p>
           <a
-            href="#share-story"
+            href="#reports"
             className="w-fit rounded-lg bg-ink px-7 py-3.5 text-base font-semibold text-white transition hover:bg-black hover:shadow-lg"
           >
-            Share Your Story
+            Browse Reports
           </a>
         </div>
       </section>
@@ -64,10 +65,10 @@ export default async function Home() {
               Share your story. Protect others from fraudulent sellers.
             </p>
             <a
-              href="#share-story"
+              href="#reports"
               className="w-fit rounded-lg bg-ink px-7 py-3.5 text-base font-semibold text-white transition hover:bg-black hover:shadow-lg"
             >
-              Share Your Story
+              Browse Reports
             </a>
           </div>
           <div className="relative flex-1 overflow-hidden rounded-2xl shadow-2xl">
@@ -80,49 +81,44 @@ export default async function Home() {
       <section className="px-6 py-16 sm:py-20">
         <div className="mx-auto w-full max-w-4xl">
           <div className="rounded-2xl border border-orange-200 bg-surface p-8 shadow-sm sm:p-12">
-            <h2 className="mb-6 text-3xl font-semibold text-ink">
-              Why I Started This Website
+            <h2 className="mb-6 text-3xl font-semibold text-black">
+              Why This Website Exists
             </h2>
             <div className="prose prose-lg max-w-none text-ink">
-              <p className="text-base leading-relaxed text-muted sm:text-lg">
-                I know first hand what it feels like to be scammed on Alibaba. After
-                placing an order and sending payment, I received a product that was
-                completely different from what was advertised—poor quality, wrong
-                specifications, and nothing like the seller promised. When I tried to
-                get a refund, the seller became unresponsive, and I lost my money.
+              <p className="text-base leading-relaxed text-black sm:text-lg">
+                The screenshot above tells a big story about how Alibaba is
+                setup. The platform has always protected sellers, even with the
+                only safety net a buyer has, the Trade Assurance policy.
               </p>
-              <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
-                That experience made me realize how many others must be going through
-                the same thing. So I created this platform as a safe space where people
-                can share their stories, warn others about fraudulent sellers, and help
-                build a community that protects honest buyers. Your voice matters, and
-                together we can make online shopping safer for everyone.
+              <p className="mt-4 text-base leading-relaxed text-black sm:text-lg">
+                We can see from the image even though the buyer has bad comments
+                and 1 star ratings, it does not appear on the overall score. Its
+                very hard and time consuming to go through even seller, check all
+                the comments, ratings, try to figure out if its a proper factory
+                or some sketchy middleman and in the end, even the platform
+                itself to hide the bad ratings.
+              </p>
+              <p className="mt-4 text-base leading-relaxed text-black sm:text-lg">
+                I know first hand what it feels like to be scammed on Alibaba.
+                After placing an order and sending payment, I received a product
+                that was completely different from what was advertised—poor
+                quality, wrong specifications, and nothing like the seller
+                promised. When I tried to get a refund, after going back and forth little bit, he eventually stoped replying and i never saw my money. The product itself was unusuable, so pretty much wasted money, time and energy
+              </p>
+              <p className="mt-4 text-base leading-relaxed text-black sm:text-lg">
+                That experience made me realize how many others must be going
+                through the same thing. So here we can build a community, add
+                the names of the sellers if a bad deal has happened and maybe
+                help other people in future. Your voice matters, and together we
+                can make online shopping safer for everyone.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Share Your Story Section */}
-      <section id="share-story" className="bg-surface px-6 py-16 sm:py-20">
-        <div className="mx-auto w-full max-w-4xl">
-          <div className="mb-8 text-center">
-            <h2 className="mb-4 text-3xl font-semibold text-ink">
-              Share Your Story
-            </h2>
-            <p className="text-base text-muted sm:text-lg">
-              Help others avoid the same experience. Every report helps protect our
-              community.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8 lg:p-10">
-            <ReportForm />
-          </div>
-        </div>
-      </section>
-
       {/* Reports Section */}
-      <section className="px-6 py-16 sm:py-20">
+      <section id="reports" className="px-6 py-16 sm:py-20">
         <div className="mx-auto w-full max-w-6xl">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -133,97 +129,21 @@ export default async function Home() {
                 Stories shared by members of our community
               </p>
             </div>
-            {reports.length > 0 && (
+            {approvedReports.length > 0 && (
               <div className="rounded-full bg-orange-100 px-5 py-2">
                 <p className="text-sm font-semibold text-orange-900">
-                  {reports.length} {reports.length === 1 ? "Report" : "Reports"}
+                  {approvedReports.length}{" "}
+                  {approvedReports.length === 1 ? "Report" : "Reports"}
                 </p>
               </div>
             )}
           </div>
 
-          {reports.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-surface p-12 text-center">
-              <p className="text-lg text-muted">
-                No reports yet. Be the first to share your story and help protect
-                others.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-6">
-              {reports.map((report) => (
-                <article
-                  key={report.id}
-                  className="group flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 transition hover:border-orange-300 hover:shadow-md sm:p-8"
-                >
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-ink sm:text-2xl">
-                          {report.product_name}
-                        </h3>
-                        <p className="mt-1 text-sm font-medium text-orange-600 sm:text-base">
-                          {report.seller_name}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-900 sm:text-sm">
-                          {report.industry}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted">
-                      <span>
-                        <span className="font-medium">{report.currency}</span>{" "}
-                        {Number(report.total_price).toLocaleString()}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        Quantity: <span className="font-medium">{report.quantity}</span>
-                      </span>
-                      <span>•</span>
-                      <span className="capitalize">{report.platform}</span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg bg-orange-50 p-4">
-                    <p className="text-base leading-relaxed text-ink sm:text-lg">
-                      {report.details}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-4 border-t border-border pt-4">
-                    <a
-                      className="cursor-pointer text-sm font-medium text-accent underline transition hover:text-orange-600"
-                      href={report.seller_url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View Seller Profile →
-                    </a>
-                    <a
-                      className="cursor-pointer text-sm font-medium text-accent underline transition hover:text-orange-600"
-                      href={report.product_url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View Product Listing →
-                    </a>
-                    <p className="ml-auto text-xs text-muted">
-                      Reported on {new Date(report.created_at).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
+          <SearchBox reports={approvedReports} />
         </div>
       </section>
+
+      <FloatingReportButton />
     </div>
   );
 }

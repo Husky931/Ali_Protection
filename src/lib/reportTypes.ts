@@ -15,6 +15,7 @@ export type Report = {
   industry: string;
   details: string;
   status: ReportStatus;
+  slug: string;
 };
 
 export type ReportInsert = {

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { reports } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { ReportInsert } from "@/lib/reportTypes";
+import { slugify } from "@/lib/slugify";
 
 const requiredTextFields = [
   "seller_name",
@@ -14,13 +16,83 @@ const requiredTextFields = [
   "details",
 ];
 
+// In-memory rate limiter: IP -> timestamps
+const rateMap = new Map<string, number[]>();
+const RATE_LIMIT = 3;
+const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const timestamps = (rateMap.get(ip) ?? []).filter(
+    (t) => now - t < RATE_WINDOW
+  );
+  rateMap.set(ip, timestamps);
+  if (timestamps.length >= RATE_LIMIT) return true;
+  timestamps.push(now);
+  return false;
+}
+
+async function verifyCaptcha(token: string): Promise<boolean> {
+  const secret = process.env.RECAPTCHA_SECRET_KEY;
+  if (!secret) return true; // Skip if not configured
+
+  const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}`,
+  });
+  const data = await res.json();
+  return data.success === true;
+}
+
+async function generateUniqueSlug(base: string): Promise<string> {
+  let slug = slugify(base);
+  let suffix = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const candidate = suffix === 0 ? slug : `${slug}-${suffix}`;
+    const [existing] = await db
+      .select({ id: reports.id })
+      .from(reports)
+      .where(eq(reports.slug, candidate))
+      .limit(1);
+    if (!existing) return candidate;
+    suffix++;
+  }
+}
+
 export async function POST(request: Request) {
-  let body: ReportInsert;
+  // Rate limiting
+  const headersList = await headers();
+  const ip =
+    headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    headersList.get("x-real-ip") ||
+    "unknown";
+
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many reports. Please try again later." },
+      { status: 429 }
+    );
+  }
+
+  let body: ReportInsert & { captchaToken?: string };
 
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid JSON payload." },
+      { status: 400 }
+    );
+  }
+
+  // Verify reCAPTCHA
+  if (!body.captchaToken || !(await verifyCaptcha(body.captchaToken))) {
+    return NextResponse.json(
+      { error: "Captcha verification failed." },
+      { status: 400 }
+    );
   }
 
   const errors: string[] = [];
@@ -48,6 +120,10 @@ export async function POST(request: Request) {
   }
 
   try {
+    const slug = await generateUniqueSlug(
+      `${body.seller_name}-${body.product_name}`
+    );
+
     await db.insert(reports).values({
       platform: body.platform?.trim() || "alibaba",
       seller_name: body.seller_name.trim(),
@@ -60,11 +136,12 @@ export async function POST(request: Request) {
       industry: body.industry.trim(),
       details: body.details.trim(),
       status: "pending",
+      slug,
     });
   } catch {
     return NextResponse.json(
       { error: "Failed to submit report." },
-      { status: 500 },
+      { status: 500 }
     );
   }
 

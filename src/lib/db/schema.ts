@@ -25,4 +25,5 @@ export const reports = pgTable("reports", {
   status: text("status", { enum: ["pending", "approved", "rejected"] })
     .default("pending")
     .notNull(),
+  slug: text("slug").notNull().unique(),
 });

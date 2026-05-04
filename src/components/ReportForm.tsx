@@ -1,7 +1,8 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const initialState = {
   platform: "alibaba",
@@ -16,12 +17,15 @@ const initialState = {
   details: "",
 };
 
+const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
+
 export function ReportForm() {
   const [form, setForm] = useState(initialState);
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
+  const captchaRef = useRef<ReCAPTCHA>(null);
 
   const handleChange = (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -35,6 +39,13 @@ export function ReportForm() {
     setStatus("loading");
     setMessage("");
 
+    const captchaToken = captchaRef.current?.getValue();
+    if (!captchaToken) {
+      setStatus("error");
+      setMessage("Please complete the captcha.");
+      return;
+    }
+
     const response = await fetch("/api/reports", {
       method: "POST",
       headers: {
@@ -44,6 +55,7 @@ export function ReportForm() {
         ...form,
         quantity: Number(form.quantity),
         total_price: Number(form.total_price),
+        captchaToken,
       }),
     });
 
@@ -51,12 +63,16 @@ export function ReportForm() {
       const payload = await response.json().catch(() => null);
       setStatus("error");
       setMessage(payload?.error || "Could not submit report.");
+      captchaRef.current?.reset();
       return;
     }
 
     setStatus("success");
-    setMessage("Thank you for sharing your story! Your report will be reviewed and published soon.");
+    setMessage(
+      "Thank you for sharing your story! Your report will be reviewed and published soon."
+    );
     setForm(initialState);
+    captchaRef.current?.reset();
   };
 
   return (
@@ -169,8 +185,8 @@ export function ReportForm() {
       <label className="flex flex-col gap-2 text-sm">
         <span className="font-medium text-ink">Your Story</span>
         <span className="text-xs text-muted">
-          Describe what happened with your order. Include details about the product,
-          seller communication, and any issues you encountered.
+          Describe what happened with your order. Include details about the
+          product, seller communication, and any issues you encountered.
         </span>
         <textarea
           className="min-h-[140px] rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
@@ -181,8 +197,11 @@ export function ReportForm() {
           required
         />
       </label>
+
+      {siteKey && <ReCAPTCHA ref={captchaRef} sitekey={siteKey} />}
+
       <button
-        className="w-full rounded-lg cursor-pointer bg-ink px-6 py-4 text-base font-semibold text-white transition hover:bg-black hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full cursor-pointer rounded-lg bg-ink px-6 py-4 text-base font-semibold text-white transition hover:bg-black hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
         type="submit"
         disabled={status === "loading"}
       >
