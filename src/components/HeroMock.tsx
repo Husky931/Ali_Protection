@@ -26,7 +26,7 @@ export function HeroMock() {
             fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)',
             padding: '5px 10px',
           }}>
-            wholesale-marketplace.example/sellers/glowtech-3920
+            alibaba.com/yangtaiLEDFACTORY/glowtech-3920
           </div>
         </div>
 
