@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { cache } from 'react';
+import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { reports } from '@/lib/db/schema';
 import { eq, and, ne } from 'drizzle-orm';
@@ -6,8 +7,59 @@ import { Report } from '@/lib/reportTypes';
 import { Icon } from '@/components/Navbar';
 import { ReportRow } from '@/components/SearchBox';
 import { formatMoney, formatDate } from '@/lib/utils';
+import { SITE_NAME, SITE_URL, OG_IMAGE, absoluteUrl } from '@/lib/site';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+
+// Cached so generateMetadata and the page component share ONE DB round-trip per request.
+const getReportBySlug = cache(async (slug: string): Promise<Report | null> => {
+  const [row] = await db.select()
+    .from(reports)
+    .where(and(eq(reports.slug, slug), eq(reports.status, 'approved')))
+    .limit(1);
+  return (row as Report) ?? null;
+});
+
+function buildDescription(r: Report): string {
+  const amount = formatMoney(r.total_price, r.currency);
+  const raw = `A buyer reports losing ${amount} to ${r.seller_name} on an order of ${r.product_name} via ${r.platform}. Read the full Alibaba scam report and buyer review.`;
+  const clean = raw.replace(/\s+/g, ' ').trim();
+  return clean.length > 160 ? `${clean.slice(0, 157).trimEnd()}…` : clean;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const report = await getReportBySlug(slug);
+  if (!report) return {};
+
+  const title = `${report.seller_name} — Alibaba Scam Report & Buyer Review`;
+  const description = buildDescription(report);
+  const path = `/reports/${report.slug}`;
+  const published = new Date(report.created_at).toISOString();
+  const modified = new Date(report.updated_at ?? report.created_at).toISOString();
+
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      type: 'article',
+      url: path,
+      title,
+      description,
+      siteName: SITE_NAME,
+      publishedTime: published,
+      modifiedTime: modified,
+      images: [OG_IMAGE],
+    },
+    twitter: { card: 'summary_large_image', title, description, images: [OG_IMAGE] },
+    robots: { index: true, follow: true },
+  };
+}
 
 export default async function ReportDetailPage({
   params,
@@ -16,16 +68,13 @@ export default async function ReportDetailPage({
 }) {
   const { slug } = await params;
 
-  const [report] = await db.select()
-    .from(reports)
-    .where(and(eq(reports.slug, slug), eq(reports.status, 'approved')))
-    .limit(1);
+  const report = await getReportBySlug(slug);
 
   if (!report) {
     notFound();
   }
 
-  const r = report as Report;
+  const r = report;
 
   const related = await db.select()
     .from(reports)
@@ -36,8 +85,37 @@ export default async function ReportDetailPage({
     ))
     .limit(3);
 
+  const canonical = absoluteUrl(`/reports/${r.slug}`);
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: `${r.seller_name} — Alibaba Scam Report & Buyer Review`,
+      description: buildDescription(r),
+      datePublished: new Date(r.created_at).toISOString(),
+      dateModified: new Date(r.updated_at ?? r.created_at).toISOString(),
+      author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+      publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+      url: canonical,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: absoluteUrl('/') },
+        { '@type': 'ListItem', position: 2, name: 'Reports', item: absoluteUrl('/reports') },
+        { '@type': 'ListItem', position: 3, name: r.seller_name, item: canonical },
+      ],
+    },
+  ];
+
   return (
     <div className="page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
       <section style={{ paddingTop: 36, paddingBottom: 40, borderBottom: '1px solid var(--line)' }}>
         <div className="container-narrow">
           <Link href="/reports" className="btn-link">

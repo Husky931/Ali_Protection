@@ -2,8 +2,10 @@ export type ReportStatus = "pending" | "approved" | "rejected";
 
 export type Report = {
   id: string;
-  created_at: string;
-  updated_at: string | null;
+  // Drizzle returns Date for timestamp columns; serialized JSON returns string.
+  // Accept both so DB rows cast to Report cleanly and JSON payloads still type-check.
+  created_at: string | Date;
+  updated_at: string | Date | null;
   platform: string;
   seller_name: string;
   seller_url: string;

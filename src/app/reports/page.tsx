@@ -1,4 +1,5 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { reports } from '@/lib/db/schema';
 import { desc, eq, and, like, or } from 'drizzle-orm';
@@ -8,14 +9,32 @@ import { SortSelect } from '@/components/SortSelect';
 import { Icon } from '@/components/Navbar';
 import Link from 'next/link';
 
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; industry?: string; sort?: string }>;
+}): Promise<Metadata> {
+  const { q, industry, sort } = await searchParams;
+  // Faceted/search permutations are thin duplicates — keep them out of the index but
+  // let crawlers follow through to the report pages. Canonicalize them all to /reports.
+  const hasParams = Boolean(q || (industry && industry !== 'All') || sort);
+  return {
+    title: 'Alibaba Scammer List — Reported Scam Sellers',
+    description:
+      'Browse community-submitted Alibaba scam reports. Search reported scam sellers by name, product, or industry before you place an order on Alibaba.',
+    alternates: { canonical: '/reports' },
+    robots: hasParams
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
+  };
+}
+
 export default async function BrowsePage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; industry?: string; sort?: string }>;
 }) {
   const { q, industry, sort } = await searchParams;
-
-  let query = db.select().from(reports).where(eq(reports.status, 'approved'));
 
   const conditions = [eq(reports.status, 'approved')];
 
@@ -34,15 +53,12 @@ export default async function BrowsePage({
     );
   }
 
-  let baseQuery = db.select().from(reports).where(and(...conditions));
-
-  if (sort === 'biggest') {
-    baseQuery = baseQuery.orderBy(desc(reports.total_price));
-  } else {
-    baseQuery = baseQuery.orderBy(desc(reports.created_at));
-  }
-
-  const filteredReports = await baseQuery;
+  const orderBy = sort === 'biggest' ? desc(reports.total_price) : desc(reports.created_at);
+  const filteredReports = await db
+    .select()
+    .from(reports)
+    .where(and(...conditions))
+    .orderBy(orderBy);
 
   const allReports = await db.select().from(reports).where(eq(reports.status, 'approved'));
   const industries = ['All', ...new Set(allReports.map((r) => r.industry))];
