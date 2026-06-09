@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Navbar } from "@/components/Navbar";
+import { Navbar, Footer, FloatingReportButton } from "@/components/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Alibaba Scam Reports - Share Your Story | Community Protection",
+  title: "Scam Reports — Bad seller alerts on wholesale marketplaces",
   description:
-    "Have you been scammed by a bad deal on Alibaba? Share your experience and help protect others from fraudulent sellers. Join our community of honest buyers sharing their stories.",
-  openGraph: {
-    title: "Alibaba Scam Reports - Share Your Story",
-    description:
-      "Have you been scammed by a bad deal on Alibaba? Share your experience and help protect others.",
-    type: "website",
-  },
+    "A community-run wall of fraud reports about bad sellers on overseas wholesale marketplaces. Share your experience and help protect others.",
 };
 
 export default function RootLayout({
@@ -21,9 +15,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+      </head>
       <body className="antialiased">
-        <Navbar />
-        {children}
+        <div id="app">
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+          <FloatingReportButton />
+        </div>
       </body>
     </html>
   );

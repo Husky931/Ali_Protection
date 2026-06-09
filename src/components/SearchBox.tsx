@@ -1,105 +1,86 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { Report } from "@/lib/reportTypes";
-import Link from "next/link";
+import React from 'react';
+import { Icon } from './Navbar';
 
-export function SearchBox({ reports }: { reports: Report[] }) {
-  const [query, setQuery] = useState("");
-
-  const filtered = query.trim()
-    ? reports.filter((r) => {
-        const q = query.toLowerCase();
-        return (
-          r.seller_name.toLowerCase().includes(q) ||
-          r.product_name.toLowerCase().includes(q) ||
-          r.industry.toLowerCase().includes(q)
-        );
-      })
-    : reports;
-
+export function SearchBox({ defaultValue = '', placeholder = 'Search by seller, product, keyword...' }: { defaultValue?: string; placeholder?: string }) {
+  const [q, setQ] = React.useState(defaultValue);
   return (
-    <div>
-      <div className="mb-6">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by seller name, product, or industry..."
-          className="w-full rounded-lg border border-border bg-white px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-        />
+    <form onSubmit={(e) => { e.preventDefault(); window.location.href = `/reports?q=${encodeURIComponent(q)}`; }}
+      style={{
+        display: 'flex', alignItems: 'center',
+        background: 'var(--card)',
+        border: '1px solid var(--line-2)',
+        borderRadius: 12,
+        padding: '4px 4px 4px 14px',
+        minWidth: 320,
+        boxShadow: 'var(--shadow-sm)',
+      }}>
+      <Icon name="search" size={16} />
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          flex: 1, border: 'none', outline: 'none',
+          background: 'transparent', padding: '10px 10px',
+          font: 'inherit', fontSize: 14,
+        }}
+      />
+      <button type="submit" className="btn btn-primary" style={{ padding: '10px 14px', fontSize: 13 }}>Search</button>
+    </form>
+  );
+}
+
+import { Report } from '@/lib/reportTypes';
+import { formatMoney, relativeDate } from '@/lib/utils';
+import Link from 'next/link';
+
+export function ReportRow({ report }: { report: Report }) {
+  const r = report;
+  return (
+    <Link
+      href={`/reports/${r.slug}`}
+      style={{
+        background: 'var(--card)', border: '1px solid var(--line)',
+        borderRadius: 16, padding: 22,
+        boxShadow: 'var(--shadow-sm)',
+        cursor: 'pointer',
+        transition: 'transform .12s, box-shadow .15s, border-color .15s',
+        display: 'grid', gridTemplateColumns: '1fr auto', gap: 18,
+        textDecoration: 'none',
+        color: 'inherit',
+      }}
+      className="report-row"
+    >
+      <div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+          <span className="chip">{r.industry}</span>
+          <span className="chip chip-mono">{r.platform}</span>
+          <span className="muted small">· {relativeDate(r.created_at)}</span>
+        </div>
+        <h3 style={{ fontSize: 17, letterSpacing: '-.015em', marginBottom: 4 }}>
+          {r.seller_name}
+        </h3>
+        <div className="muted small" style={{ marginBottom: 10 }}>
+          {r.product_name} · qty {typeof r.quantity === 'string' ? parseInt(r.quantity).toLocaleString() : r.quantity.toLocaleString()}
+        </div>
+        <p style={{ margin: 0, color: 'var(--ink-2)', fontSize: 14.5, lineHeight: 1.55, maxWidth: 720 }}>
+          &ldquo;{r.details.slice(0, 160)}...&rdquo;
+        </p>
       </div>
-
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
-          <p className="text-lg text-muted">
-            {query.trim()
-              ? "No reports match your search."
-              : "No reports yet. Be the first to share your story and help protect others."}
-          </p>
+      <div style={{ textAlign: 'right', minWidth: 130, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Lost</div>
+          <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--accent-ink)', fontFamily: 'var(--serif)' }}>
+            {formatMoney(r.total_price, r.currency)}
+          </div>
+          <div className="muted small" style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>{r.currency}</div>
         </div>
-      ) : (
-        <div className="flex flex-col gap-6">
-          {filtered.map((report) => (
-            <article
-              key={report.id}
-              className="group flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 transition hover:border-orange-300 hover:shadow-md sm:p-8"
-            >
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-ink sm:text-2xl">
-                      {report.product_name}
-                    </h3>
-                    <p className="mt-1 text-sm font-medium text-orange-600 sm:text-base">
-                      {report.seller_name}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-900 sm:text-sm">
-                    {report.industry}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted">
-                  <span>
-                    <span className="font-medium">{report.currency}</span>{" "}
-                    {Number(report.total_price).toLocaleString()}
-                  </span>
-                  <span>·</span>
-                  <span>
-                    Qty: <span className="font-medium">{report.quantity}</span>
-                  </span>
-                  <span>·</span>
-                  <span className="capitalize">{report.platform}</span>
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-orange-50 p-4">
-                <p className="line-clamp-2 text-base leading-relaxed text-ink">
-                  {report.details}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-4 border-t border-border pt-4">
-                <Link
-                  href={`/reports/${report.slug}`}
-                  className="text-sm font-medium text-accent underline transition hover:text-orange-600"
-                >
-                  Read full report →
-                </Link>
-                <p className="ml-auto text-xs text-muted">
-                  Reported on{" "}
-                  {new Date(report.created_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-            </article>
-          ))}
+        <div className="small" style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 12 }}>
+          Read <Icon name="arrow-right" size={13} />
         </div>
-      )}
-    </div>
+      </div>
+    </Link>
   );
 }

@@ -1,115 +1,141 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { db } from "@/lib/db";
-import { reports } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import React from 'react';
+import { db } from '@/lib/db';
+import { reports } from '@/lib/db/schema';
+import { eq, and, ne } from 'drizzle-orm';
+import { Report } from '@/lib/reportTypes';
+import { Icon } from '@/components/Navbar';
+import { ReportRow } from '@/components/SearchBox';
+import { formatMoney, formatDate } from '@/lib/utils';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
-type Props = { params: Promise<{ slug: string }> };
+export default async function ReportDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
 
-async function getReport(slug: string) {
-  const [report] = await db
-    .select()
+  const [report] = await db.select()
     .from(reports)
-    .where(and(eq(reports.slug, slug), eq(reports.status, "approved")))
+    .where(and(eq(reports.slug, slug), eq(reports.status, 'approved')))
     .limit(1);
-  return report ?? null;
-}
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const report = await getReport(slug);
-  if (!report) return { title: "Report Not Found" };
+  if (!report) {
+    notFound();
+  }
 
-  const title = `${report.product_name} from ${report.seller_name} — Scam Report`;
-  const description = report.details.slice(0, 160);
+  const r = report as Report;
 
-  return {
-    title,
-    description,
-    openGraph: { title, description, type: "article" },
-  };
-}
-
-export default async function ReportPage({ params }: Props) {
-  const { slug } = await params;
-  const report = await getReport(slug);
-  if (!report) notFound();
+  const related = await db.select()
+    .from(reports)
+    .where(and(
+      eq(reports.status, 'approved'),
+      eq(reports.industry, r.industry),
+      ne(reports.id, r.id)
+    ))
+    .limit(3);
 
   return (
-    <div className="min-h-screen bg-primary px-6 py-12 text-ink">
-      <div className="mx-auto w-full max-w-4xl">
-        <Link
-          href="/#reports"
-          className="mb-6 inline-block text-sm text-accent underline transition hover:text-orange-600"
-        >
-          ← Back to all reports
-        </Link>
+    <div className="page">
+      <section style={{ paddingTop: 36, paddingBottom: 40, borderBottom: '1px solid var(--line)' }}>
+        <div className="container-narrow">
+          <Link href="/reports" className="btn-link">
+            <Icon name="arrow-left" size={13} /> Back to all reports
+          </Link>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 18, marginBottom: 14 }}>
+            <span className="chip chip-orange">
+              <Icon name="flag" size={12} /> Approved report
+            </span>
+            <span className="chip">{r.industry}</span>
+            <span className="chip chip-mono">{r.platform}</span>
+            <span className="muted small">· Posted {formatDate(r.created_at)}</span>
+          </div>
+          <h1 style={{ fontSize: 'clamp(28px, 4vw, 42px)', letterSpacing: '-.03em', lineHeight: 1.1, textWrap: 'balance' }}>
+            {r.seller_name} — alleged scam report
+          </h1>
+          <p className="muted" style={{ fontSize: 17, marginTop: 12, lineHeight: 1.5 }}>
+            A buyer reported losing {formatMoney(r.total_price, r.currency)} on an order of {r.product_name.toLowerCase()} from this seller. Read the full account below.
+          </p>
+        </div>
+      </section>
 
-        <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-10">
-          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-ink sm:text-3xl">
-                {report.product_name}
-              </h1>
-              <p className="mt-1 text-base font-medium text-orange-600 sm:text-lg">
-                {report.seller_name}
-              </p>
+      <section style={{ paddingTop: 40, paddingBottom: 30 }}>
+        <div className="container-narrow">
+          {/* Order facts */}
+          <div className="paper" style={{ padding: 24, marginBottom: 32, borderRadius: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--muted)', marginBottom: 14 }}>
+              Order details
             </div>
-            <span className="mt-2 w-fit rounded-full bg-orange-100 px-4 py-1 text-sm font-semibold text-orange-900 sm:mt-0">
-              {report.industry}
-            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 28px' }}>
+              <Fact icon="tag" label="Seller" value={r.seller_name} link={r.seller_url} />
+              <Fact icon="package" label="Product" value={r.product_name} link={r.product_url} />
+              <Fact icon="dollar" label="Total paid" value={`${formatMoney(r.total_price, r.currency)} ${r.currency}`} />
+              <Fact icon="package" label="Quantity" value={r.quantity.toLocaleString() + ' units'} />
+              <Fact icon="tag" label="Industry" value={r.industry} />
+              <Fact icon="clock" label="Reported" value={formatDate(r.created_at)} />
+            </div>
           </div>
 
-          <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-muted">
-            <span>
-              <span className="font-medium">{report.currency}</span>{" "}
-              {Number(report.total_price).toLocaleString()}
-            </span>
-            <span>·</span>
-            <span>
-              Quantity: <span className="font-medium">{report.quantity}</span>
-            </span>
-            <span>·</span>
-            <span className="capitalize">{report.platform}</span>
-            <span>·</span>
-            <span>
-              {new Date(report.created_at).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </span>
+          {/* Story */}
+          <div style={{ fontFamily: 'var(--serif)', fontSize: 19, lineHeight: 1.7, color: 'var(--ink)' }}>
+            {r.details.split('\n\n').map((p, i) => (
+              <p key={i} style={{ margin: '0 0 1.1em' }}>{p}</p>
+            ))}
           </div>
 
-          <div className="mb-6 rounded-lg bg-orange-50 p-6">
-            <h2 className="mb-3 text-lg font-semibold text-ink">
-              What happened
-            </h2>
-            <p className="whitespace-pre-line text-base leading-relaxed text-ink">
-              {report.details}
-            </p>
+          <div style={{ marginTop: 36, padding: 18, background: 'var(--bg-2)', border: '1px dashed var(--line-2)', borderRadius: 12, fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>
+            <strong style={{ color: 'var(--ink-2)' }}>A note on this report.</strong> This is a buyer&rsquo;s account of their own experience. We reviewed it for spam, libel, and verifiable details before publishing — but we cannot confirm every claim. If you&rsquo;re the seller and believe this is inaccurate, <Link href="/contact" className="btn-link">submit a response</Link>.
           </div>
 
-          <div className="flex flex-wrap gap-4 border-t border-border pt-6">
-            <a
-              className="text-sm font-medium text-accent underline transition hover:text-orange-600"
-              href={report.seller_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View Seller Profile →
-            </a>
-            <a
-              className="text-sm font-medium text-accent underline transition hover:text-orange-600"
-              href={report.product_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View Product Listing →
-            </a>
+          {/* Inline CTA */}
+          <div style={{
+            marginTop: 36, padding: 28,
+            background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-2))',
+            border: '1px solid oklch(0.84 0.10 60)',
+            borderRadius: 18,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 18, flexWrap: 'wrap',
+          }}>
+            <div style={{ maxWidth: 420 }}>
+              <h3 style={{ fontSize: 20, letterSpacing: '-.02em', color: 'var(--accent-ink)' }}>Got scammed by a different seller?</h3>
+              <p className="muted small" style={{ marginTop: 6, lineHeight: 1.5 }}>It takes about 5 minutes. No account needed. Anonymous.</p>
+            </div>
+            <Link href="/submit-report" className="btn btn-accent">Share Your Story</Link>
           </div>
-        </article>
+        </div>
+      </section>
+
+      {related.length > 0 && (
+        <section style={{ paddingTop: 30, paddingBottom: 60, background: 'var(--bg-2)', borderTop: '1px solid var(--line)' }}>
+          <div className="container-narrow">
+            <span className="eyebrow">More in {r.industry}</span>
+            <h2 style={{ fontSize: 24, marginTop: 10, letterSpacing: '-.02em', marginBottom: 18 }}>Other reports in this category</h2>
+            <div className="stack" style={{ gap: 10 }}>
+              {related.map((x) => (
+                <ReportRow key={x.id} report={x as Report} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function Fact({ icon, label, value, link }: { icon: string; label: string; value: string; link?: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Icon name={icon} size={12} /> {label}
+      </div>
+      <div style={{ fontSize: 14.5, color: 'var(--ink)', fontWeight: 500, lineHeight: 1.4 }}>
+        {value}
+        {link && (
+          <a href={link} target="_blank" rel="noopener noreferrer"
+            style={{ color: 'var(--accent-ink)', marginLeft: 6, fontSize: 12 }}>
+            <Icon name="external" size={12} />
+          </a>
+        )}
       </div>
     </div>
   );
