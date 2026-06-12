@@ -1,0 +1,1 @@
+CREATE INDEX "reports_status_created_at_idx" ON "reports" USING btree ("status","created_at" DESC NULLS LAST);
