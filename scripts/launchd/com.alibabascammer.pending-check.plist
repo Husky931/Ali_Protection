@@ -11,8 +11,13 @@
     launchctl bootout gui/$(id -u)/com.alibabascammer.pending-check 2>/dev/null
     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.alibabascammer.pending-check.plist
 
+  Run it now (for testing):
+    launchctl kickstart -k gui/$(id -u)/com.alibabascammer.pending-check
+
   Runs daily at 09:00 local time. If the laptop is asleep/off at 09:00, launchd
-  runs it at the next wake. Uses a login shell so nvm's `node` resolves.
+  runs it at the next wake. launchd starts with a minimal PATH and does NOT source
+  ~/.zshrc, so we load nvm explicitly and use the `default` node alias — this keeps
+  working across node version upgrades as long as `nvm alias default` is set.
 -->
 <plist version="1.0">
 <dict>
@@ -23,7 +28,7 @@
   <array>
     <string>/bin/zsh</string>
     <string>-lc</string>
-    <string>cd '/Users/enterwizard/My Documents/Work/alibaba_scammers' &amp;&amp; exec node scripts/notify-pending.mjs</string>
+    <string>export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] &amp;&amp; . "$NVM_DIR/nvm.sh" --no-use; nvm use default &gt;/dev/null 2&gt;&amp;1; cd '/Users/enterwizard/My Documents/Work/alibaba_scammers' &amp;&amp; exec node scripts/notify-pending.mjs</string>
   </array>
 
   <key>StartCalendarInterval</key>
