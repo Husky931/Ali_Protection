@@ -65,7 +65,7 @@ function Hero({navigate}) {
               lineHeight: 1.5
             }}
           >
-            Share your story. Protect others from fraudulent sellers. Anonymous, free, and moderated — every report is reviewed before it goes public.
+            Share your story. Protect others from fraudulent sellers. Bad sellers should not get repeated business.
           </p>
           <div style={{display: "flex", gap: 12, marginTop: 28, flexWrap: "wrap"}}>
             <button className="btn btn-accent" onClick={() => navigate("submit")}>
@@ -74,11 +74,6 @@ function Hero({navigate}) {
             <button className="btn btn-ghost" onClick={() => navigate("browse")}>
               <Icon name="search" size={16} /> Browse Reports
             </button>
-          </div>
-          <div style={{display: "flex", gap: 22, marginTop: 30, flexWrap: "wrap", color: "var(--muted)", fontSize: 13}}>
-            <TrustItem icon="lock" text="Anonymous — no account" />
-            <TrustItem icon="shield" text="Moderated by humans" />
-            <TrustItem icon="check" text="Free and ad-free" />
           </div>
         </div>
         <div style={{position: "relative", minHeight: 420}}>
@@ -144,7 +139,7 @@ function HowItWorks() {
     },
     {
       num: "03",
-      title: "Goes public, gets indexed",
+      title: "Goes public",
       body: "Your report lives at its own URL with the seller&rsquo;s name, so the next buyer searching for them sees it.",
       icon: "megaphone"
     }
@@ -342,9 +337,6 @@ function CTAStrip({navigate}) {
   return (
     <section style={{padding: "90px 0", background: "var(--ink)", color: "#fff"}}>
       <div className="container" style={{textAlign: "center", maxWidth: 700}}>
-        <span className="eyebrow" style={{color: "var(--accent)"}}>
-          Got burned?
-        </span>
         <h2 style={{fontSize: "clamp(32px, 4.5vw, 48px)", marginTop: 14, letterSpacing: "-.03em", lineHeight: 1.1, textWrap: "balance"}}>
           Your story can save the next buyer thousands.
         </h2>

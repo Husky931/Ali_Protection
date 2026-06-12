@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray, asc } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { reports } from "@/lib/db/schema";
+import { reports, report_images } from "@/lib/db/schema";
+import { AdminReportImage } from "@/lib/reportTypes";
+import { presignView, r2Configured } from "@/lib/r2";
 
 const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -26,7 +28,46 @@ export async function GET(request: Request) {
       .where(eq(reports.status, "pending"))
       .orderBy(desc(reports.created_at));
 
-    return NextResponse.json({ data });
+    // Pending evidence images live in the non-public pending/ prefix, so the
+    // moderation queue views them through short-lived presigned URLs.
+    const imagesByReport = new Map<string, AdminReportImage[]>();
+    if (data.length > 0 && r2Configured()) {
+      const imageRows = await db
+        .select()
+        .from(report_images)
+        .where(
+          inArray(
+            report_images.report_id,
+            data.map((report) => report.id),
+          ),
+        )
+        .orderBy(asc(report_images.position));
+
+      const signed = await Promise.all(
+        imageRows.map(async (row) => {
+          try {
+            return { row, url: await presignView(row.storage_key) };
+          } catch {
+            // A missing/unsignable object shouldn't take down the queue.
+            return null;
+          }
+        }),
+      );
+      // Assemble after the parallel presign so position order is preserved.
+      for (const item of signed) {
+        if (!item) continue;
+        const list = imagesByReport.get(item.row.report_id) ?? [];
+        list.push({ id: item.row.id, url: item.url });
+        imagesByReport.set(item.row.report_id, list);
+      }
+    }
+
+    return NextResponse.json({
+      data: data.map((report) => ({
+        ...report,
+        images: imagesByReport.get(report.id) ?? [],
+      })),
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to load reports." },

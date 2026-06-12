@@ -31,4 +31,27 @@ export type ReportInsert = {
   currency: string;
   industry: string;
   details: string;
+  // Ordered R2 staging keys ("pending/<uuid>.webp") from /api/uploads.
+  images?: string[];
+};
+
+export type ReportImage = {
+  id: string;
+  report_id: string;
+  storage_key: string;
+  content_type: string;
+  size_bytes: number;
+  position: number;
+  created_at: string | Date;
+};
+
+// Admin moderation queue payload: pending images are served via short-lived
+// presigned URLs, never public ones.
+export type AdminReportImage = {
+  id: string;
+  url: string;
+};
+
+export type AdminReport = Report & {
+  images: AdminReportImage[];
 };

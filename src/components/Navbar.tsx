@@ -117,6 +117,7 @@ export function Icon({ name, size = 18, className }: { name: string; size?: numb
     case 'tag': return (<svg {...props}><path d="M3 12V3h9l9 9-9 9-9-9z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg>);
     case 'link': return (<svg {...props}><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>);
     case 'x': return (<svg {...props}><path d="M6 6l12 12M18 6L6 18"/></svg>);
+    case 'camera': return (<svg {...props}><path d="M3 8a2 2 0 0 1 2-2h2l2-3h6l2 3h2a2 2 0 0 1 2 2v11H3V8z"/><circle cx="12" cy="13" r="3.5"/></svg>);
     default: return null;
   }
 }

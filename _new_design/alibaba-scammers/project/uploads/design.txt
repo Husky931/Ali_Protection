@@ -59,9 +59,7 @@ A floating "Report a seller" button persists on every page.
 Reports are anonymous — there are no user accounts.
 
 ## Trust & safety cues to surface in the design
-- "Every report is reviewed before going public"
-- "reCAPTCHA-protected, rate-limited submissions"
-- "Anonymous — no account required"
+- "rate-limited submissions"
 - A clear note that the site reflects user experiences and is not affiliated with Alibaba.
 
 ## Brand & visual direction

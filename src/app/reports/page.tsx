@@ -67,12 +67,11 @@ export default async function BrowsePage({
     <div className="page">
       <section style={{ paddingTop: 56, paddingBottom: 30, borderBottom: '1px solid var(--line)' }}>
         <div className="container">
-          <span className="eyebrow">Community wall</span>
           <h1 style={{ fontSize: 'clamp(32px, 4.5vw, 48px)', letterSpacing: '-.03em', marginTop: 10, lineHeight: 1.05 }}>
             {allReports.length} reports of bad <span className="marker" style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 600 }}>Alibaba</span> deals.
           </h1>
           <p className="muted" style={{ fontSize: 17, marginTop: 12, maxWidth: 600 }}>
-            Search before you wire. Every report below was reviewed by a human moderator.
+            Search before you wire.
           </p>
           <div style={{ marginTop: 24 }}>
             <SearchBox defaultValue={q || ''} placeholder="Search by seller name, product, or keyword..." />

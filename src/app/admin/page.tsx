@@ -3,12 +3,12 @@
 import { useState } from "react";
 
 import { Icon } from "@/components/Navbar";
-import { Report } from "@/lib/reportTypes";
+import { AdminReport } from "@/lib/reportTypes";
 import { formatMoney, relativeDate } from "@/lib/utils";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<AdminReport[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -199,6 +199,34 @@ export default function AdminPage() {
                 >
                   {report.details}
                 </p>
+
+                {report.images?.length > 0 ? (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em", fontWeight: 600, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon name="camera" size={12} /> Evidence photos ({report.images.length})
+                    </div>
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      {report.images.map((image, i) => (
+                        <a key={image.id} href={image.url} target="_blank" rel="noreferrer" title="Open full size">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={image.url}
+                            alt={`Evidence photo ${i + 1}`}
+                            loading="lazy"
+                            style={{
+                              width: 110,
+                              height: 110,
+                              objectFit: "cover",
+                              borderRadius: 10,
+                              border: "1px solid var(--line-2)",
+                              display: "block",
+                            }}
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="row" style={{ gap: 18, marginTop: 16, flexWrap: "wrap" }}>
                   {report.seller_url ? (

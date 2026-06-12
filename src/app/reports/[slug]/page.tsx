@@ -1,9 +1,10 @@
 import React, { cache } from 'react';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { reports } from '@/lib/db/schema';
-import { eq, and, ne } from 'drizzle-orm';
+import { reports, report_images } from '@/lib/db/schema';
+import { eq, and, ne, asc } from 'drizzle-orm';
 import { Report } from '@/lib/reportTypes';
+import { publicImageUrl } from '@/lib/images';
 import { Icon } from '@/components/Navbar';
 import { ReportRow } from '@/components/SearchBox';
 import { formatMoney, formatDate } from '@/lib/utils';
@@ -76,6 +77,17 @@ export default async function ReportDetailPage({
 
   const r = report;
 
+  // Published evidence lives under the reports/ prefix on the public image
+  // domain. Anything still in pending/ (mid-approval edge case) stays hidden.
+  const imageRows = await db.select()
+    .from(report_images)
+    .where(eq(report_images.report_id, r.id))
+    .orderBy(asc(report_images.position));
+  const evidenceUrls = imageRows
+    .filter((row) => row.storage_key.startsWith('reports/'))
+    .map((row) => publicImageUrl(row.storage_key))
+    .filter((url): url is string => Boolean(url));
+
   const related = await db.select()
     .from(reports)
     .where(and(
@@ -98,6 +110,7 @@ export default async function ReportDetailPage({
       publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
       mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
       url: canonical,
+      ...(evidenceUrls.length > 0 ? { image: evidenceUrls } : {}),
     },
     {
       '@context': 'https://schema.org',
@@ -161,6 +174,30 @@ export default async function ReportDetailPage({
               <p key={i} style={{ margin: '0 0 1.1em' }}>{p}</p>
             ))}
           </div>
+
+          {evidenceUrls.length > 0 && (
+            <div style={{ marginTop: 36 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--muted)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="camera" size={12} /> Photo evidence ({evidenceUrls.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
+                {evidenceUrls.map((url, i) => (
+                  <a key={url} href={url} target="_blank" rel="noopener noreferrer" title="Open full size">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Evidence photo ${i + 1} of ${evidenceUrls.length} — ${r.product_name} order from ${r.seller_name}`}
+                      loading="lazy"
+                      style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 12, border: '1px solid var(--line)', display: 'block', background: 'var(--bg-2)' }}
+                    />
+                  </a>
+                ))}
+              </div>
+              <p className="muted small" style={{ marginTop: 10 }}>
+                Photos submitted by the buyer as part of this report. Click any photo to view it full size.
+              </p>
+            </div>
+          )}
 
           <div style={{ marginTop: 36, padding: 18, background: 'var(--bg-2)', border: '1px dashed var(--line-2)', borderRadius: 12, fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>
             <strong style={{ color: 'var(--ink-2)' }}>A note on this report.</strong> This is a buyer&rsquo;s account of their own experience. We reviewed it for spam, libel, and verifiable details before publishing — but we cannot confirm every claim. If you&rsquo;re the seller and believe this is inaccurate, <Link href="/contact" className="btn-link">submit a response</Link>.

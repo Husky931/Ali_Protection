@@ -56,7 +56,7 @@ function Hero({ totalCount }: { totalCount: number }) {
             fontSize: 19, color: 'var(--ink-2)',
             marginTop: 22, maxWidth: 520, lineHeight: 1.5,
           }}>
-            Share your story. Protect others from fraudulent sellers. Anonymous, free, and moderated — every report is reviewed before it goes public.
+            Share your story. Protect others from fraudulent sellers.  Bad sellers should not get repeated business.
           </p>
           <div style={{ display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
             <Link href="/submit-report" className="btn btn-accent">
@@ -65,11 +65,6 @@ function Hero({ totalCount }: { totalCount: number }) {
             <Link href="/reports" className="btn btn-ghost">
               <Icon name="search" size={16} /> Browse Reports
             </Link>
-          </div>
-          <div style={{ display: 'flex', gap: 22, marginTop: 30, flexWrap: 'wrap', color: 'var(--muted)', fontSize: 13 }}>
-            <TrustItem icon="lock" text="Anonymous — no account" />
-            <TrustItem icon="shield" text="Moderated by humans" />
-            <TrustItem icon="check" text="Free and ad-free" />
           </div>
         </div>
         <div style={{ position: 'relative', minHeight: 420 }}>
@@ -126,8 +121,8 @@ function HowItWorks() {
     },
     {
       num: '03',
-      title: 'Goes public, gets indexed',
-      body: 'Your report lives at its own URL with the seller&rsquo;s name, so the next buyer searching for them sees it.',
+      title: 'Goes public',
+      body: 'You might not be able to get your money back, but at least the sellers bad deeds will be out in the open and it might cost them some business in the future. ',
       icon: 'megaphone',
     },
   ];
@@ -209,12 +204,11 @@ function CTAStrip() {
   return (
     <section style={{ padding: '90px 0', background: 'var(--ink)', color: '#fff' }}>
       <div className="container" style={{ textAlign: 'center', maxWidth: 700 }}>
-        <span className="eyebrow" style={{ color: 'var(--accent)' }}>Got burned?</span>
         <h2 style={{ fontSize: 'clamp(32px, 4.5vw, 48px)', marginTop: 14, letterSpacing: '-.03em', lineHeight: 1.1, textWrap: 'balance' }}>
           Your story can save the next buyer thousands.
         </h2>
         <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 17, marginTop: 16, lineHeight: 1.5 }}>
-          Five minutes of writing makes your seller&rsquo;s scam Googleable. That&rsquo;s the whole game.
+          Five minutes of writing puts your scam seller&rsquo;s company name out in the open.
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 28, flexWrap: 'wrap' }}>
           <Link href="/submit-report" className="btn btn-accent">

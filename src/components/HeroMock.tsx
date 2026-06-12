@@ -91,7 +91,7 @@ export function HeroMock() {
       />
       <Annotation
         style={{ top: 22, left: -32, transform: 'translateX(-100%) rotate(-3deg)' }}
-        text={'5-star average,\nno red flags shown'}
+        text={'3-star average,\nno red flags shown'}
         flipped
       />
     </div>

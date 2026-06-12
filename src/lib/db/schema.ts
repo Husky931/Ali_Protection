@@ -3,6 +3,7 @@ import {
   uuid,
   text,
   numeric,
+  integer,
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
@@ -39,4 +40,24 @@ export const reports = pgTable(
       table.created_at.desc(),
     ),
   ],
+);
+
+export const report_images = pgTable(
+  "report_images",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    report_id: uuid("report_id")
+      .notNull()
+      .references(() => reports.id, { onDelete: "cascade" }),
+    // R2 object key, e.g. "pending/<uuid>.webp" before approval,
+    // "reports/<report_id>/<position>.webp" once published.
+    storage_key: text("storage_key").notNull().unique(),
+    content_type: text("content_type").notNull(),
+    size_bytes: integer("size_bytes").notNull(),
+    position: integer("position").notNull().default(0),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("report_images_report_id_idx").on(table.report_id)],
 );
