@@ -27,7 +27,7 @@ SEO is the primary growth channel. Every feature decision should be evaluated th
 
 ### Security
 
-- All public form submissions go through reCAPTCHA verification and rate limiting.
+- All public form submissions are rate limited (per-IP).
 - Reports are moderated — nothing goes public without admin approval.
 - Sanitize and validate all user input server-side. Never trust the client.
 - Admin routes require the `ADMIN_PASSWORD` header. Keep this credential out of version control.

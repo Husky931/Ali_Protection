@@ -32,19 +32,6 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
-async function verifyCaptcha(token: string): Promise<boolean> {
-  const secret = process.env.RECAPTCHA_SECRET_KEY;
-  if (!secret) return true; // Skip if not configured
-
-  const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}`,
-  });
-  const data = await res.json();
-  return data.success === true;
-}
-
 async function generateUniqueSlug(base: string): Promise<string> {
   let slug = slugify(base);
   let suffix = 0;
@@ -76,21 +63,13 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: ReportInsert & { captchaToken?: string };
+  let body: ReportInsert;
 
   try {
     body = await request.json();
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON payload." },
-      { status: 400 }
-    );
-  }
-
-  // Verify reCAPTCHA
-  if (!body.captchaToken || !(await verifyCaptcha(body.captchaToken))) {
-    return NextResponse.json(
-      { error: "Captcha verification failed." },
       { status: 400 }
     );
   }

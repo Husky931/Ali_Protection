@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "gsc": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-gsc"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "/Users/enterwizard/.config/alibabascammer/user_creds.json"
+      }
+    },
+    "ga4": {
+      "command": "/Users/enterwizard/.local/share/ga4-mcp/venv/bin/analytics-mcp",
+      "args": [],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "/Users/enterwizard/.config/alibabascammer/user_creds.json",
+        "GOOGLE_PROJECT_ID": "forum-364710"
+      }
+    }
+  }
+}

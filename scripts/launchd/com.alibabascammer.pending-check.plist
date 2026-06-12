@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Daily check for pending reports -> Telegram notification.
+
+  Install:
+    cp scripts/launchd/com.alibabascammer.pending-check.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.alibabascammer.pending-check.plist
+
+  Reload after editing:
+    launchctl bootout gui/$(id -u)/com.alibabascammer.pending-check 2>/dev/null
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.alibabascammer.pending-check.plist
+
+  Runs daily at 09:00 local time. If the laptop is asleep/off at 09:00, launchd
+  runs it at the next wake. Uses a login shell so nvm's `node` resolves.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.alibabascammer.pending-check</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>cd '/Users/enterwizard/My Documents/Work/alibaba_scammers' &amp;&amp; exec node scripts/notify-pending.mjs</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/enterwizard/Library/Logs/alibabascammer-pending-check.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/enterwizard/Library/Logs/alibabascammer-pending-check.log</string>
+</dict>
+</plist>

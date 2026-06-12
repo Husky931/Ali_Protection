@@ -172,9 +172,6 @@ function HowItWorks() {
             </div>
           ))}
         </div>
-        <p style={{ marginTop: 24, color: 'var(--muted)', fontSize: 13, textAlign: 'center' }}>
-          <Icon name="lock" size={13} /> reCAPTCHA-protected · Rate-limited · No tracking pixels
-        </p>
       </div>
     </section>
   );

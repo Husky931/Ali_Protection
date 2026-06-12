@@ -1,12 +1,9 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Icon } from "./Navbar";
 import { INDUSTRIES, CURRENCIES, PLATFORMS } from "@/lib/constants";
 import { formatMoney } from "@/lib/utils";
-import ReCAPTCHA from "react-google-recaptcha";
-
-const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 
 const initialState = {
   seller_name: '',
@@ -26,7 +23,6 @@ export function ReportForm() {
   const [form, setForm] = useState(initialState);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const captchaRef = useRef<ReCAPTCHA>(null);
 
   const handleChange = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [k]: e.target.value });
@@ -50,13 +46,6 @@ export function ReportForm() {
     setStatus("loading");
     setErrorMessage("");
 
-    const captchaToken = captchaRef.current?.getValue();
-    if (!captchaToken) {
-      setStatus("error");
-      setErrorMessage("Please complete the captcha.");
-      return;
-    }
-
     const response = await fetch("/api/reports", {
       method: "POST",
       headers: {
@@ -66,7 +55,6 @@ export function ReportForm() {
         ...form,
         quantity: Number(form.quantity),
         total_price: Number(form.total_price),
-        captchaToken,
       }),
     });
 
@@ -74,7 +62,6 @@ export function ReportForm() {
       const payload = await response.json().catch(() => null);
       setStatus("error");
       setErrorMessage(payload?.error || "Could not submit report.");
-      captchaRef.current?.reset();
       return;
     }
 
@@ -138,11 +125,6 @@ export function ReportForm() {
         {step === 3 && (
           <>
             <StepReview form={form} jump={setStep} />
-            {siteKey && (
-              <div style={{ marginTop: 24 }}>
-                <ReCAPTCHA ref={captchaRef} sitekey={siteKey} />
-              </div>
-            )}
             {errorMessage && (
               <div style={{ marginTop: 12, padding: 12, background: 'var(--bg-2)', color: 'var(--danger)', borderRadius: 8, fontSize: 13 }}>
                 {errorMessage}
@@ -170,7 +152,7 @@ export function ReportForm() {
       </div>
 
       <p className="muted small" style={{ marginTop: 24, textAlign: 'center' }}>
-        <Icon name="lock" size={12} /> Submissions are anonymous, rate-limited, and reCAPTCHA-protected.
+        <Icon name="lock" size={12} /> Submissions are anonymous and rate-limited.
       </p>
     </div>
   );
