@@ -292,10 +292,6 @@ export function ReportForm() {
           </button>
         )}
       </div>
-
-      <p className="muted small" style={{ marginTop: 24, textAlign: 'center' }}>
-        <Icon name="lock" size={12} /> Submissions are anonymous and rate-limited.
-      </p>
     </div>
   );
 }
@@ -371,7 +367,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
   return (
     <div>
       <h2 style={{ fontSize: 22, letterSpacing: '-.02em', marginBottom: 6 }}>What happened?</h2>
-      <p className="muted small" style={{ marginBottom: 22 }}>Tell it like you&rsquo;re telling a friend. Short paragraphs are fine. The more specific you are, the more useful this is to the next buyer.</p>
+      <p className="muted small" style={{ marginBottom: 22 }}>Describe your experience with this seller.</p>
       <div className="field">
         <textarea className="textarea" value={form.details} onChange={handleChange('details')}
           style={{ minHeight: 260, fontFamily: 'var(--serif)', fontSize: 17, lineHeight: 1.6 }}
@@ -384,7 +380,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
 
       <div className="field">
         <label className="label">
-          Photos <span className="label-hint">optional, up to {MAX_IMAGES_PER_REPORT} — chat screenshots, payment receipts, what actually arrived</span>
+          Photos <span className="label-hint">optional, up to {MAX_IMAGES_PER_REPORT} — chat screenshots, payment receipts, received products</span>
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {images.map((image: PreparedImage, i: number) => (
@@ -434,13 +430,10 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
         {imageError && (
           <div style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{imageError}</div>
         )}
-        <p className="muted small" style={{ marginTop: 8 }}>
-          Photos are compressed in your browser before upload, and any hidden metadata (like GPS location) is removed. Blur anything personal before attaching.
-        </p>
       </div>
 
       <div style={{ background: 'var(--bg-2)', border: '1px dashed var(--line-2)', borderRadius: 10, padding: 14, fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>
-        <strong style={{ color: 'var(--ink-2)' }}>Tips:</strong> Include the timeline, the dispute outcome, and any responses from the seller. Don&rsquo;t include personal info (your real name, payment details, anything you wouldn&rsquo;t want public).
+        <strong style={{ color: 'var(--ink-2)' }}>Tips:</strong> Include the timeline, the dispute outcome, and any responses from the seller. Don&rsquo;t include anything you don&rsquo;t want public in the photos or blur out certain parts.
       </div>
     </div>
   );
@@ -459,7 +452,7 @@ function StepReview({ form, images, jump }: any) {
   return (
     <div>
       <h2 style={{ fontSize: 22, letterSpacing: '-.02em', marginBottom: 6 }}>Look it over.</h2>
-      <p className="muted small" style={{ marginBottom: 22 }}>Once you submit, a moderator will review within 48 hours. You won&rsquo;t hear back unless we have questions.</p>
+      <p className="muted small" style={{ marginBottom: 22 }}>Once you submit, a moderator will review within 48 hours.</p>
       <div>
         <Field label="Seller name" value={form.seller_name} onEdit={() => jump(0)} />
         <Field label="Seller URL" value={form.seller_url} onEdit={() => jump(0)} />

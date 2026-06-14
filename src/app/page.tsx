@@ -178,7 +178,6 @@ function FeedPreview({ reports }: { reports: Report[] }) {
       <div className="container">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
           <div style={{ maxWidth: 580 }}>
-            <span className="eyebrow">Recent reports</span>
             <h2 style={{ fontSize: 32, marginTop: 12, letterSpacing: '-.025em', lineHeight: 1.15 }}>
               Search any seller before you wire money.
             </h2>

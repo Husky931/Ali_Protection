@@ -8,7 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "notify": "node scripts/notify-pending.mjs"
+    "notify": "node scripts/notify-pending.mjs",
+    "r2:list": "node scripts/r2-list.mjs",
+    "r2:watch": "node scripts/r2-list.mjs watch",
+    "r2:test": "node scripts/test-r2.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1067.0",
