@@ -7,9 +7,10 @@ import { db } from '@/lib/db';
 import { reports } from '@/lib/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { Report } from '@/lib/reportTypes';
+import { publicReportColumns } from '@/lib/reportSelect';
 
 export default async function LandingPage() {
-  const recentReports = await db.select()
+  const recentReports = await db.select(publicReportColumns)
     .from(reports)
     .where(eq(reports.status, 'approved'))
     .orderBy(desc(reports.created_at))

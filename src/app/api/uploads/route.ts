@@ -3,32 +3,21 @@ import { headers } from "next/headers";
 
 import {
   MAX_IMAGES_PER_REPORT,
+  MAX_RECEIPTS_PER_REPORT,
   MAX_IMAGE_BYTES,
   isAllowedImageType,
   imageExtension,
 } from "@/lib/images";
 import { presignUpload, r2Configured } from "@/lib/r2";
+import { isRateLimited } from "@/lib/rateLimit";
 
-// In-memory rate limiter: IP -> timestamps. Looser than report submission
-// (3/hour) so a failed upload can be retried, but still bounded: worst case
-// 10 requests x 5 files x 4 MB lands 200 MB/hour in pending/, which the R2
-// lifecycle rule cleans up.
-const rateMap = new Map<string, number[]>();
-const RATE_LIMIT = 10;
-const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const timestamps = (rateMap.get(ip) ?? []).filter(
-    (t) => now - t < RATE_WINDOW
-  );
-  rateMap.set(ip, timestamps);
-  if (timestamps.length >= RATE_LIMIT) return true;
-  timestamps.push(now);
-  return false;
-}
-
+// Upload limit is looser than report submission (3/hour) so a failed upload can
+// be retried, but still bounded: worst case 10 requests x 5 files x 4 MB lands
+// 200 MB/hour in pending/, which the R2 lifecycle rule cleans up.
 type UploadRequest = {
+  // "receipt" routes uploads to the private receipts/ prefix; anything else
+  // (default) is evidence in pending/.
+  kind?: unknown;
   files?: { content_type?: unknown; size_bytes?: unknown }[];
 };
 
@@ -46,7 +35,7 @@ export async function POST(request: Request) {
     headersList.get("x-real-ip") ||
     "unknown";
 
-  if (isRateLimited(ip)) {
+  if (await isRateLimited("uploads", ip, 10, 60 * 60)) {
     return NextResponse.json(
       { error: "Too many upload attempts. Please try again later." },
       { status: 429 }
@@ -63,13 +52,17 @@ export async function POST(request: Request) {
     );
   }
 
+  const isReceipt = body.kind === "receipt";
+  const prefix = isReceipt ? "receipts" : "pending";
+  const maxFiles = isReceipt ? MAX_RECEIPTS_PER_REPORT : MAX_IMAGES_PER_REPORT;
+
   const files = body.files;
   if (!Array.isArray(files) || files.length === 0) {
     return NextResponse.json({ error: "files is required." }, { status: 400 });
   }
-  if (files.length > MAX_IMAGES_PER_REPORT) {
+  if (files.length > maxFiles) {
     return NextResponse.json(
-      { error: `At most ${MAX_IMAGES_PER_REPORT} photos per report.` },
+      { error: `At most ${maxFiles} files per request.` },
       { status: 400 }
     );
   }
@@ -102,7 +95,7 @@ export async function POST(request: Request) {
       files.map(async (file) => {
         const contentType = file.content_type as "image/webp" | "image/jpeg";
         const sizeBytes = file.size_bytes as number;
-        const key = `pending/${crypto.randomUUID()}.${imageExtension(contentType)}`;
+        const key = `${prefix}/${crypto.randomUUID()}.${imageExtension(contentType)}`;
         const url = await presignUpload(key, contentType, sizeBytes);
         return { key, url };
       })

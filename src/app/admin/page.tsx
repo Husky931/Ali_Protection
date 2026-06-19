@@ -58,6 +58,27 @@ export default function AdminPage() {
     setReports((prev) => prev.filter((report) => report.id !== id));
   };
 
+  const setPurchaseVerified = async (id: string, value: boolean) => {
+    const response = await fetch(`/api/admin/reports/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-password": password,
+      },
+      body: JSON.stringify({ purchase_verified: value }),
+    });
+    if (!response.ok) {
+      setStatus("error");
+      setMessage("Failed to update purchase status.");
+      return;
+    }
+    setReports((prev) =>
+      prev.map((report) =>
+        report.id === id ? { ...report, purchase_verified: value } : report,
+      ),
+    );
+  };
+
   const clear = () => {
     setPassword("");
     setReports([]);
@@ -185,6 +206,26 @@ export default function AdminPage() {
                   <span className="chip chip-mono">Qty {Number(report.quantity).toLocaleString()}</span>
                 </div>
 
+                {(report.has_email || report.possible_duplicates.length > 0) ? (
+                  <div className="row" style={{ flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                    {report.has_email ? (
+                      <span className="chip" style={{ background: "var(--bg-2)" }}>
+                        <Icon name="check" size={11} /> Email {report.email_verified ? "verified" : "added"}
+                      </span>
+                    ) : null}
+                    {report.possible_duplicates.length > 0 ? (
+                      <span
+                        className="chip"
+                        style={{ color: "var(--danger)", borderColor: "oklch(0.82 0.09 27)" }}
+                        title={report.possible_duplicates.map((d) => `${d.seller_name} (${d.status})`).join(", ")}
+                      >
+                        ⚠ {report.possible_duplicates.length} possible duplicate
+                        {report.possible_duplicates.length > 1 ? "s" : ""}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 <p
                   style={{
                     fontFamily: "var(--serif)",
@@ -228,6 +269,27 @@ export default function AdminPage() {
                   </div>
                 ) : null}
 
+                {report.receipts?.length > 0 ? (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em", fontWeight: 600, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon name="lock" size={12} /> Order receipt — private, never published ({report.receipts.length})
+                    </div>
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      {report.receipts.map((image, i) => (
+                        <a key={image.id} href={image.url} target="_blank" rel="noreferrer" title="Open full size">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={image.url}
+                            alt={`Order receipt ${i + 1}`}
+                            loading="lazy"
+                            style={{ width: 110, height: 110, objectFit: "cover", borderRadius: 10, border: "1px solid var(--line-2)", display: "block" }}
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="row" style={{ gap: 18, marginTop: 16, flexWrap: "wrap" }}>
                   {report.seller_url ? (
                     <a className="btn-link small" href={report.seller_url} target="_blank" rel="noreferrer">
@@ -242,6 +304,17 @@ export default function AdminPage() {
                 </div>
 
                 <div className="divider" style={{ margin: "20px 0 18px" }} />
+
+                <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, fontSize: 14, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={report.purchase_verified}
+                    onChange={(e) => setPurchaseVerified(report.id, e.target.checked)}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  Purchase verified{" "}
+                  <span className="muted small">(shows a &ldquo;Purchase verified&rdquo; badge on the public report)</span>
+                </label>
 
                 <div className="row" style={{ gap: 10 }}>
                   <button

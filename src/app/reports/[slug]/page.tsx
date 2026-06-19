@@ -1,9 +1,10 @@
 import React, { cache } from 'react';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { reports, report_images } from '@/lib/db/schema';
+import { reports, report_images, report_updates } from '@/lib/db/schema';
 import { eq, and, ne, asc } from 'drizzle-orm';
 import { Report } from '@/lib/reportTypes';
+import { publicReportColumns } from '@/lib/reportSelect';
 import { publicImageUrl } from '@/lib/images';
 import { Icon } from '@/components/Navbar';
 import { ReportRow } from '@/components/SearchBox';
@@ -14,7 +15,7 @@ import { notFound } from 'next/navigation';
 
 // Cached so generateMetadata and the page component share ONE DB round-trip per request.
 const getReportBySlug = cache(async (slug: string): Promise<Report | null> => {
-  const [row] = await db.select()
+  const [row] = await db.select(publicReportColumns)
     .from(reports)
     .where(and(eq(reports.slug, slug), eq(reports.status, 'approved')))
     .limit(1);
@@ -84,11 +85,17 @@ export default async function ReportDetailPage({
     .where(eq(report_images.report_id, r.id))
     .orderBy(asc(report_images.position));
   const evidenceUrls = imageRows
-    .filter((row) => row.storage_key.startsWith('reports/'))
+    .filter((row) => row.kind === 'evidence' && row.storage_key.startsWith('reports/'))
     .map((row) => publicImageUrl(row.storage_key))
     .filter((url): url is string => Boolean(url));
 
-  const related = await db.select()
+  // Approved submitter updates (e.g. "the seller refunded me"), oldest first.
+  const updates = await db.select()
+    .from(report_updates)
+    .where(and(eq(report_updates.report_id, r.id), eq(report_updates.status, 'approved')))
+    .orderBy(asc(report_updates.created_at));
+
+  const related = await db.select(publicReportColumns)
     .from(reports)
     .where(and(
       eq(reports.status, 'approved'),
@@ -140,6 +147,15 @@ export default async function ReportDetailPage({
             </span>
             <span className="chip">{r.industry}</span>
             <span className="chip chip-mono">{r.platform}</span>
+            {r.purchase_verified && (
+              <span
+                className="chip"
+                title="The buyer provided an order receipt that a moderator reviewed."
+                style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.84 0.10 60)' }}
+              >
+                <Icon name="check" size={12} /> Purchase verified
+              </span>
+            )}
             <span className="muted small">· Posted {formatDate(r.created_at)}</span>
           </div>
           <h1 style={{ fontSize: 'clamp(28px, 4vw, 42px)', letterSpacing: '-.03em', lineHeight: 1.1, textWrap: 'balance' }}>
@@ -174,6 +190,24 @@ export default async function ReportDetailPage({
               <p key={i} style={{ margin: '0 0 1.1em' }}>{p}</p>
             ))}
           </div>
+
+          {updates.length > 0 && (
+            <div style={{ marginTop: 36 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--muted)', marginBottom: 14 }}>
+                Updates from the buyer
+              </div>
+              <div className="stack" style={{ gap: 14 }}>
+                {updates.map((u) => (
+                  <div key={u.id} style={{ borderLeft: '3px solid var(--accent)', paddingLeft: 16 }}>
+                    <div className="muted small" style={{ marginBottom: 4 }}>{formatDate(u.created_at)}</div>
+                    <div style={{ fontFamily: 'var(--serif)', fontSize: 16.5, lineHeight: 1.65, color: 'var(--ink)', whiteSpace: 'pre-wrap' }}>
+                      {u.body}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {evidenceUrls.length > 0 && (
             <div style={{ marginTop: 36 }}>

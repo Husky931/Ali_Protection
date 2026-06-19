@@ -7,37 +7,98 @@ import { ReportInsert } from "@/lib/reportTypes";
 import { slugify } from "@/lib/slugify";
 import {
   MAX_IMAGES_PER_REPORT,
+  MAX_RECEIPTS_PER_REPORT,
   MAX_IMAGE_BYTES,
   PENDING_KEY_PATTERN,
+  RECEIPT_KEY_PATTERN,
   isAllowedImageType,
 } from "@/lib/images";
 import { headObject, deleteObjects, r2Configured } from "@/lib/r2";
+import { isRateLimited } from "@/lib/rateLimit";
+import { validateReportFields } from "@/lib/validateReport";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { generateSecret, hashToken } from "@/lib/tokens";
 
-// product_url is intentionally absent — the form labels it optional.
-const requiredTextFields = [
-  "seller_name",
-  "seller_url",
-  "product_name",
-  "currency",
-  "industry",
-  "details",
-];
+// The submit body plus the anti-abuse / consent fields the form adds.
+type ReportBody = ReportInsert & {
+  website?: string; // honeypot — humans never fill this
+  turnstileToken?: string;
+  terms_version?: string;
+  receipts?: string[]; // private order-receipt staging keys
+};
 
-// In-memory rate limiter: IP -> timestamps
-const rateMap = new Map<string, number[]>();
-const RATE_LIMIT = 3;
-const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
+type VerifiedImage = { key: string; contentType: string; sizeBytes: number };
 
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const timestamps = (rateMap.get(ip) ?? []).filter(
-    (t) => now - t < RATE_WINDOW
-  );
-  rateMap.set(ip, timestamps);
-  if (timestamps.length >= RATE_LIMIT) return true;
-  timestamps.push(now);
-  return false;
+type VerifyResult =
+  | { ok: true; images: VerifiedImage[] }
+  | { ok: false; error: string; status: number };
+
+// Verifies a batch of client-supplied R2 keys: correct staging prefix, count
+// within `max`, and each object actually present with an allowed type/size. On
+// any bad object the whole batch is deleted (we never publish what we can't
+// vouch for). Empty input is valid — uploads are optional.
+async function verifyUploadBatch(
+  rawKeys: unknown,
+  pattern: RegExp,
+  max: number,
+  noun: string,
+): Promise<VerifyResult> {
+  const keys = Array.from(
+    new Set(Array.isArray(rawKeys) ? rawKeys : []),
+  ).filter((k): k is string => typeof k === "string");
+
+  if (keys.length === 0) return { ok: true, images: [] };
+  if (!r2Configured()) {
+    return {
+      ok: false,
+      error: "Image uploads are not available right now.",
+      status: 400,
+    };
+  }
+  if (keys.length > max) {
+    return { ok: false, error: `At most ${max} ${noun} per report.`, status: 400 };
+  }
+  if (keys.some((key) => !pattern.test(key))) {
+    return { ok: false, error: "Invalid image reference.", status: 400 };
+  }
+
+  const images: VerifiedImage[] = [];
+  try {
+    for (const key of keys) {
+      const meta = await headObject(key);
+      if (
+        !meta ||
+        !isAllowedImageType(meta.contentType) ||
+        meta.sizeBytes <= 0 ||
+        meta.sizeBytes > MAX_IMAGE_BYTES
+      ) {
+        await deleteObjects(keys);
+        return {
+          ok: false,
+          error: `One or more ${noun} could not be verified. Please re-attach them and try again.`,
+          status: 400,
+        };
+      }
+      images.push({
+        key,
+        contentType: meta.contentType,
+        sizeBytes: meta.sizeBytes,
+      });
+    }
+  } catch {
+    return {
+      ok: false,
+      error: `Failed to verify uploaded ${noun}. Please try again.`,
+      status: 500,
+    };
+  }
+  return { ok: true, images };
 }
+
+// Window during which the one-time claim_secret can attach an email to a fresh
+// report. The secret is returned to the submitter's browser; only its hash is
+// stored.
+const CLAIM_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 async function generateUniqueSlug(base: string): Promise<string> {
   let slug = slugify(base);
@@ -56,21 +117,20 @@ async function generateUniqueSlug(base: string): Promise<string> {
 }
 
 export async function POST(request: Request) {
-  // Rate limiting
   const headersList = await headers();
   const ip =
     headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     headersList.get("x-real-ip") ||
     "unknown";
 
-  if (isRateLimited(ip)) {
+  if (await isRateLimited("reports", ip, 3, 60 * 60)) {
     return NextResponse.json(
       { error: "Too many reports. Please try again later." },
       { status: 429 }
     );
   }
 
-  let body: ReportInsert;
+  let body: ReportBody;
 
   try {
     body = await request.json();
@@ -81,94 +141,72 @@ export async function POST(request: Request) {
     );
   }
 
-  const errors: string[] = [];
-
-  for (const field of requiredTextFields) {
-    const value = body[field as keyof ReportInsert];
-    if (typeof value !== "string" || value.trim().length === 0) {
-      errors.push(`${field} is required.`);
-    }
+  // Honeypot: a hidden field no human fills. If it's set, accept silently so the
+  // bot believes it succeeded, but store nothing and issue no claim secret.
+  if (typeof body.website === "string" && body.website.trim().length > 0) {
+    return NextResponse.json({ ok: true }, { status: 201 });
   }
 
-  const quantity = Number(body.quantity);
-  const totalPrice = Number(body.total_price);
-
-  if (!Number.isFinite(quantity) || quantity <= 0) {
-    errors.push("quantity must be a positive number.");
+  // Bot check (a no-op until Turnstile keys are configured).
+  if (!(await verifyTurnstile(body.turnstileToken, ip))) {
+    return NextResponse.json(
+      { error: "Verification failed. Please complete the challenge and retry." },
+      { status: 400 }
+    );
   }
 
-  if (!Number.isFinite(totalPrice) || totalPrice <= 0) {
-    errors.push("total_price must be a positive number.");
+  // Truthfulness / terms acceptance is required — enforced here too so a direct
+  // API caller can't bypass the form's checkbox.
+  if (
+    typeof body.terms_version !== "string" ||
+    body.terms_version.trim().length === 0
+  ) {
+    return NextResponse.json(
+      { error: "You must accept the terms to submit a report." },
+      { status: 400 }
+    );
   }
 
-  if (errors.length > 0) {
-    return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
+  const validation = validateReportFields(body);
+  if (!validation.ok) {
+    return NextResponse.json(
+      { error: validation.errors.join(" ") },
+      { status: 400 }
+    );
   }
+  const { quantity, totalPrice } = validation.values;
 
-  // Validate evidence images: keys must be our own pending/ staging keys, and
-  // the objects must actually exist in R2 with an allowed type and size (the
-  // client is not trusted — it only ever sends keys it got from /api/uploads,
-  // but anyone can call this endpoint directly).
-  const imageKeys = Array.from(
-    new Set(Array.isArray(body.images) ? body.images : [])
+  // Verify evidence photos and (optional, private) order receipts. The endpoint
+  // is public, so the client is not trusted: keys must be our own staging keys
+  // and the objects must exist in R2 with an allowed type/size.
+  const evidence = await verifyUploadBatch(
+    body.images,
+    PENDING_KEY_PATTERN,
+    MAX_IMAGES_PER_REPORT,
+    "photos",
   );
-  type VerifiedImage = { key: string; contentType: string; sizeBytes: number };
-  const verifiedImages: VerifiedImage[] = [];
-
-  if (imageKeys.length > 0) {
-    if (!r2Configured()) {
-      return NextResponse.json(
-        { error: "Image uploads are not available right now." },
-        { status: 400 }
-      );
-    }
-    if (imageKeys.length > MAX_IMAGES_PER_REPORT) {
-      return NextResponse.json(
-        { error: `At most ${MAX_IMAGES_PER_REPORT} photos per report.` },
-        { status: 400 }
-      );
-    }
-    if (imageKeys.some((key) => typeof key !== "string" || !PENDING_KEY_PATTERN.test(key))) {
-      return NextResponse.json(
-        { error: "Invalid image reference." },
-        { status: 400 }
-      );
-    }
-
-    try {
-      for (const key of imageKeys) {
-        const meta = await headObject(key);
-        if (
-          !meta ||
-          !isAllowedImageType(meta.contentType) ||
-          meta.sizeBytes <= 0 ||
-          meta.sizeBytes > MAX_IMAGE_BYTES
-        ) {
-          // Don't publish anything we can't vouch for; drop the whole batch.
-          await deleteObjects(imageKeys);
-          return NextResponse.json(
-            { error: "One or more photos could not be verified. Please re-attach them and try again." },
-            { status: 400 }
-          );
-        }
-        verifiedImages.push({
-          key,
-          contentType: meta.contentType,
-          sizeBytes: meta.sizeBytes,
-        });
-      }
-    } catch {
-      return NextResponse.json(
-        { error: "Failed to verify uploaded photos. Please try again." },
-        { status: 500 }
-      );
-    }
+  if (!evidence.ok) {
+    return NextResponse.json({ error: evidence.error }, { status: evidence.status });
+  }
+  const receipts = await verifyUploadBatch(
+    body.receipts,
+    RECEIPT_KEY_PATTERN,
+    MAX_RECEIPTS_PER_REPORT,
+    "receipts",
+  );
+  if (!receipts.ok) {
+    return NextResponse.json({ error: receipts.error }, { status: receipts.status });
   }
 
   try {
     const slug = await generateUniqueSlug(
       `${body.seller_name}-${body.product_name}`
     );
+
+    // One-time secret handed back to the submitter's browser. Presenting it
+    // (within CLAIM_TTL) lets them attach an email and receive a manage link.
+    // Only its hash is persisted.
+    const claimSecret = generateSecret();
 
     const [inserted] = await db
       .insert(reports)
@@ -186,18 +224,27 @@ export async function POST(request: Request) {
         details: body.details.trim(),
         status: "pending",
         slug,
+        claim_secret_hash: hashToken(claimSecret),
+        claim_expires_at: new Date(Date.now() + CLAIM_TTL_MS),
+        terms_version: body.terms_version.trim(),
+        terms_accepted_at: new Date(),
       })
       .returning({ id: reports.id });
 
-    if (verifiedImages.length > 0) {
+    const allImages = [
+      ...evidence.images.map((img, i) => ({ ...img, kind: "evidence" as const, position: i })),
+      ...receipts.images.map((img, i) => ({ ...img, kind: "receipt" as const, position: i })),
+    ];
+    if (allImages.length > 0) {
       try {
         await db.insert(report_images).values(
-          verifiedImages.map((image, position) => ({
+          allImages.map((image) => ({
             report_id: inserted.id,
             storage_key: image.key,
             content_type: image.contentType,
             size_bytes: image.sizeBytes,
-            position,
+            position: image.position,
+            kind: image.kind,
           }))
         );
       } catch (error) {
@@ -208,6 +255,13 @@ export async function POST(request: Request) {
         throw error;
       }
     }
+
+    // report_id + claim_secret let the success screen optionally attach an
+    // email. The id is unguessable (uuid) and useless without the secret.
+    return NextResponse.json(
+      { ok: true, report_id: inserted.id, claim_secret: claimSecret },
+      { status: 201 }
+    );
   } catch {
     // Orphaned pending/ objects (report row failed, or image rows failed
     // after the report landed) are swept by the R2 lifecycle rule.
@@ -216,6 +270,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-
-  return NextResponse.json({ ok: true }, { status: 201 });
 }

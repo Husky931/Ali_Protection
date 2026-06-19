@@ -10,16 +10,9 @@ import {
   isMissingObjectError,
   r2Configured,
 } from "@/lib/r2";
-
-const adminPassword = process.env.ADMIN_PASSWORD;
-
-function isAuthorized(request: Request) {
-  if (!adminPassword) {
-    return false;
-  }
-  const header = request.headers.get("x-admin-password");
-  return header === adminPassword;
-}
+import { isAuthorized } from "@/lib/adminAuth";
+import { emailConfigured, sendReportStatusEmail } from "@/lib/email";
+import { absoluteUrl } from "@/lib/site";
 
 export async function PATCH(
   request: NextRequest,
@@ -30,28 +23,48 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  let body: { status?: ReportStatus };
+  let body: { status?: ReportStatus; purchase_verified?: boolean };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
   }
 
-  if (body.status !== "approved" && body.status !== "rejected") {
+  const hasStatus = body.status === "approved" || body.status === "rejected";
+  const hasPurchaseToggle = typeof body.purchase_verified === "boolean";
+  if (!hasStatus && !hasPurchaseToggle) {
     return NextResponse.json(
-      { error: "status must be approved or rejected." },
+      { error: "Provide status (approved|rejected) and/or purchase_verified." },
       { status: 400 },
     );
   }
+  const extra = hasPurchaseToggle
+    ? { purchase_verified: body.purchase_verified }
+    : {};
 
   try {
     const [report] = await db
-      .select({ id: reports.id })
+      .select({
+        id: reports.id,
+        slug: reports.slug,
+        seller_name: reports.seller_name,
+        submitter_email: reports.submitter_email,
+        email_verified: reports.email_verified,
+      })
       .from(reports)
       .where(eq(reports.id, id))
       .limit(1);
     if (!report) {
       return NextResponse.json({ error: "Report not found." }, { status: 404 });
+    }
+
+    // Standalone "purchase verified" toggle — no status change.
+    if (!hasStatus) {
+      await db
+        .update(reports)
+        .set({ ...extra, updated_at: new Date() })
+        .where(eq(reports.id, id));
+      return NextResponse.json({ ok: true });
     }
 
     const imageRows = await db
@@ -95,7 +108,7 @@ export async function PATCH(
       }
       await db
         .update(reports)
-        .set({ status: "approved", updated_at: new Date() })
+        .set({ status: "approved", updated_at: new Date(), ...extra })
         .where(eq(reports.id, id));
       if (pendingRows.length > 0) {
         // Best-effort: the pending/ lifecycle rule sweeps anything missed.
@@ -104,13 +117,27 @@ export async function PATCH(
     } else {
       await db
         .update(reports)
-        .set({ status: "rejected", updated_at: new Date() })
+        .set({ status: "rejected", updated_at: new Date(), ...extra })
         .where(eq(reports.id, id));
       if (imageRows.length > 0) {
         if (r2Configured()) {
           await deleteObjects(imageRows.map((row) => row.storage_key));
         }
         await db.delete(report_images).where(eq(report_images.report_id, id));
+      }
+    }
+
+    // Notify the submitter of the decision if they opted into email.
+    if (report.email_verified && report.submitter_email && emailConfigured()) {
+      try {
+        await sendReportStatusEmail({
+          to: report.submitter_email,
+          sellerName: report.seller_name,
+          decision: body.status as "approved" | "rejected",
+          url: absoluteUrl(`/reports/${report.slug}`),
+        });
+      } catch {
+        /* non-critical */
       }
     }
   } catch {

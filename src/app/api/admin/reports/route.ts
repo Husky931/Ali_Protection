@@ -1,20 +1,16 @@
 import { NextResponse } from "next/server";
-import { eq, desc, inArray, asc } from "drizzle-orm";
+import { eq, desc, inArray, asc, or } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { reports, report_images } from "@/lib/db/schema";
-import { AdminReportImage } from "@/lib/reportTypes";
+import {
+  Report,
+  AdminReport,
+  AdminReportImage,
+  AdminReportDuplicate,
+} from "@/lib/reportTypes";
 import { presignView, r2Configured } from "@/lib/r2";
-
-const adminPassword = process.env.ADMIN_PASSWORD;
-
-function isAuthorized(request: Request) {
-  if (!adminPassword) {
-    return false;
-  }
-  const header = request.headers.get("x-admin-password");
-  return header === adminPassword;
-}
+import { isAuthorized } from "@/lib/adminAuth";
 
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
@@ -31,6 +27,7 @@ export async function GET(request: Request) {
     // Pending evidence images live in the non-public pending/ prefix, so the
     // moderation queue views them through short-lived presigned URLs.
     const imagesByReport = new Map<string, AdminReportImage[]>();
+    const receiptsByReport = new Map<string, AdminReportImage[]>();
     if (data.length > 0 && r2Configured()) {
       const imageRows = await db
         .select()
@@ -54,20 +51,92 @@ export async function GET(request: Request) {
         }),
       );
       // Assemble after the parallel presign so position order is preserved.
+      // Receipts (private order receipts) are kept in their own bucket.
       for (const item of signed) {
         if (!item) continue;
-        const list = imagesByReport.get(item.row.report_id) ?? [];
+        const target =
+          item.row.kind === "receipt" ? receiptsByReport : imagesByReport;
+        const list = target.get(item.row.report_id) ?? [];
         list.push({ id: item.row.id, url: item.url });
-        imagesByReport.set(item.row.report_id, list);
+        target.set(item.row.report_id, list);
       }
     }
 
-    return NextResponse.json({
-      data: data.map((report) => ({
-        ...report,
+    // Possible-duplicate hint for moderators: other reports sharing a pending
+    // report's seller URL or submitter email. Guarded so a dedup hiccup never
+    // takes down the queue, and never a block — just a signal.
+    const duplicatesByReport = new Map<string, AdminReportDuplicate[]>();
+    try {
+      const sellerUrls = [
+        ...new Set(data.map((r) => r.seller_url).filter(Boolean)),
+      ];
+      const emails = [
+        ...new Set(
+          data
+            .map((r) => r.submitter_email)
+            .filter((e): e is string => Boolean(e)),
+        ),
+      ];
+      const conds = [];
+      if (sellerUrls.length)
+        conds.push(inArray(reports.seller_url, sellerUrls));
+      if (emails.length)
+        conds.push(inArray(reports.submitter_email, emails));
+
+      if (conds.length > 0) {
+        const candidates = await db
+          .select({
+            id: reports.id,
+            slug: reports.slug,
+            seller_name: reports.seller_name,
+            status: reports.status,
+            seller_url: reports.seller_url,
+            submitter_email: reports.submitter_email,
+          })
+          .from(reports)
+          .where(conds.length === 1 ? conds[0] : or(...conds));
+
+        for (const report of data) {
+          const dups = candidates
+            .filter(
+              (c) =>
+                c.id !== report.id &&
+                (c.seller_url === report.seller_url ||
+                  (!!report.submitter_email &&
+                    c.submitter_email === report.submitter_email)),
+            )
+            .map((c) => ({
+              id: c.id,
+              slug: c.slug,
+              seller_name: c.seller_name,
+              status: c.status,
+            }));
+          if (dups.length > 0) duplicatesByReport.set(report.id, dups);
+        }
+      }
+    } catch {
+      // Duplicates are a non-critical hint; ignore failures.
+    }
+
+    // Strip the secret columns that select() returns (token hashes, raw email)
+    // before sending to the moderation client; surface only derived signals.
+    const payload: AdminReport[] = data.map((report) => {
+      const safe = { ...report } as Record<string, unknown>;
+      delete safe.claim_secret_hash;
+      delete safe.manage_token_hash;
+      delete safe.claim_expires_at;
+      delete safe.submitter_email;
+      return {
+        ...(safe as unknown as Report),
         images: imagesByReport.get(report.id) ?? [],
-      })),
+        receipts: receiptsByReport.get(report.id) ?? [],
+        has_email: Boolean(report.submitter_email),
+        email_verified: report.email_verified,
+        possible_duplicates: duplicatesByReport.get(report.id) ?? [],
+      };
     });
+
+    return NextResponse.json({ data: payload });
   } catch {
     return NextResponse.json(
       { error: "Failed to load reports." },

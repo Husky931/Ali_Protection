@@ -57,6 +57,11 @@ export function ReportRow({ report }: { report: Report }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 8 }}>
           <span className="chip">{r.industry}</span>
           <span className="chip chip-mono">{r.platform}</span>
+          {r.purchase_verified && (
+            <span className="chip" style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.84 0.10 60)' }}>
+              <Icon name="check" size={11} /> Verified
+            </span>
+          )}
           <span className="muted small">· {relativeDate(r.created_at)}</span>
         </div>
         <h3 style={{ fontSize: 17, letterSpacing: '-.015em', marginBottom: 4 }}>

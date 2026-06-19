@@ -5,7 +5,9 @@ import { Icon } from "./Navbar";
 import { INDUSTRIES, CURRENCIES, PLATFORMS } from "@/lib/constants";
 import { formatMoney } from "@/lib/utils";
 import { prepareImage, type PreparedImage } from "@/lib/clientImage";
-import { MAX_IMAGES_PER_REPORT } from "@/lib/images";
+import { MAX_IMAGES_PER_REPORT, MAX_RECEIPTS_PER_REPORT } from "@/lib/images";
+import { Turnstile, turnstileRequired } from "./Turnstile";
+import { TERMS_VERSION } from "@/lib/terms";
 
 const initialState = {
   seller_name: '',
@@ -29,19 +31,34 @@ export function ReportForm() {
   const [imageError, setImageError] = useState("");
   const [imageBusy, setImageBusy] = useState(false);
   const [submitLabel, setSubmitLabel] = useState("");
+  // Anti-abuse + consent + post-submit identity handoff.
+  const [honeypot, setHoneypot] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
+  const [claimSecret, setClaimSecret] = useState<string | null>(null);
+  // Optional, private order receipts (kept separate from public evidence photos).
+  const [receipts, setReceipts] = useState<PreparedImage[]>([]);
+  const [receiptError, setReceiptError] = useState("");
+  const [receiptBusy, setReceiptBusy] = useState(false);
 
   const handleChange = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [k]: e.target.value });
   };
 
-  // Mirrors `images` so the unmount cleanup below sees the latest previews.
+  // Mirror state so the unmount cleanup below sees the latest previews.
   const imagesRef = useRef<PreparedImage[]>([]);
+  const receiptsRef = useRef<PreparedImage[]>([]);
   useEffect(() => {
     imagesRef.current = images;
   }, [images]);
   useEffect(() => {
+    receiptsRef.current = receipts;
+  }, [receipts]);
+  useEffect(() => {
     return () => {
       imagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+      receiptsRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
     };
   }, []);
 
@@ -87,14 +104,61 @@ export function ReportForm() {
     setImageError("");
   };
 
+  const addReceipts = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setReceiptError("");
+    setReceiptBusy(true);
+    const room = MAX_RECEIPTS_PER_REPORT - receipts.length;
+    const picked = Array.from(files).slice(0, room);
+    const prepared: PreparedImage[] = [];
+    let failedCount = 0;
+    let lastFailure = "";
+    for (const file of picked) {
+      try {
+        prepared.push(await prepareImage(file));
+      } catch (error) {
+        failedCount++;
+        lastFailure = error instanceof Error ? error.message : "Couldn't read that image.";
+      }
+    }
+    setReceipts((prev) => {
+      const combined = [...prev, ...prepared];
+      combined.slice(MAX_RECEIPTS_PER_REPORT).forEach((image) => URL.revokeObjectURL(image.previewUrl));
+      return combined.slice(0, MAX_RECEIPTS_PER_REPORT);
+    });
+    if (failedCount > 0) {
+      setReceiptError(
+        failedCount === 1 ? lastFailure : `${failedCount} files couldn't be added. ${lastFailure}`,
+      );
+    }
+    setReceiptBusy(false);
+  };
+
+  const removeReceipt = (id: string) => {
+    setReceipts((prev) => {
+      const target = prev.find((image) => image.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((image) => image.id !== id);
+    });
+    setReceiptError("");
+  };
+
   const resetAll = () => {
     images.forEach((image) => URL.revokeObjectURL(image.previewUrl));
     setImages([]);
     setImageError("");
+    receipts.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+    setReceipts([]);
+    setReceiptError("");
     setForm(initialState);
     setStep(0);
     setStatus("idle");
     setErrorMessage("");
+    setReportId(null);
+    setClaimSecret(null);
+    setTermsAccepted(false);
+    setTurnstileToken("");
+    setHoneypot("");
   };
 
   const steps = [
@@ -162,6 +226,49 @@ export function ReportForm() {
       }
     }
 
+    // Private order receipts upload to the receipts/ prefix (kind: "receipt").
+    let receiptKeys: string[] = [];
+    if (receipts.length > 0) {
+      setSubmitLabel("Uploading receipt…");
+      try {
+        const presignResponse = await fetch("/api/uploads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: "receipt",
+            files: receipts.map((image) => ({
+              content_type: image.contentType,
+              size_bytes: image.blob.size,
+            })),
+          }),
+        });
+        if (!presignResponse.ok) {
+          const payload = await presignResponse.json().catch(() => null);
+          throw new Error(payload?.error || "Could not upload the receipt.");
+        }
+        const { uploads } = (await presignResponse.json()) as {
+          uploads: { key: string; url: string }[];
+        };
+        await Promise.all(
+          uploads.map((upload, i) =>
+            fetch(upload.url, {
+              method: "PUT",
+              headers: { "Content-Type": receipts[i].contentType },
+              body: receipts[i].blob,
+            }).then((r) => {
+              if (!r.ok) throw new Error("Could not upload the receipt. Please try again.");
+            }),
+          ),
+        );
+        receiptKeys = uploads.map((upload) => upload.key);
+      } catch (error) {
+        setStatus("error");
+        setErrorMessage(error instanceof Error ? error.message : "Could not upload the receipt.");
+        setSubmitLabel("");
+        return;
+      }
+    }
+
     setSubmitLabel("Submitting…");
     let response: Response;
     try {
@@ -175,6 +282,10 @@ export function ReportForm() {
           quantity: Number(form.quantity),
           total_price: Number(form.total_price),
           images: imageKeys,
+          receipts: receiptKeys,
+          website: honeypot,
+          turnstileToken,
+          terms_version: TERMS_VERSION,
         }),
       });
     } catch {
@@ -192,13 +303,25 @@ export function ReportForm() {
       return;
     }
 
+    // report_id + claim_secret let the success screen optionally attach an email.
+    const result = await response.json().catch(() => null);
+    setReportId(result?.report_id ?? null);
+    setClaimSecret(result?.claim_secret ?? null);
+
     images.forEach((image) => URL.revokeObjectURL(image.previewUrl));
     setImages([]);
     setStatus("success");
     setStep(4);
   };
 
-  if (step === 4) return <Submitted onReset={resetAll} />;
+  if (step === 4)
+    return (
+      <Submitted
+        reportId={reportId}
+        claimSecret={claimSecret}
+        onReset={resetAll}
+      />
+    );
 
   return (
     <div className="container-narrow">
@@ -260,11 +383,48 @@ export function ReportForm() {
             imageBusy={imageBusy}
             onAddFiles={addFiles}
             onRemoveImage={removeImage}
+            receipts={receipts}
+            receiptError={receiptError}
+            receiptBusy={receiptBusy}
+            onAddReceipts={addReceipts}
+            onRemoveReceipt={removeReceipt}
           />
         )}
         {step === 3 && (
           <>
             <StepReview form={form} images={images} jump={setStep} />
+
+            {/* Honeypot — pushed off-screen and hidden from assistive tech. Bots
+                that auto-fill inputs populate it; humans never see it, and a
+                non-empty value is silently dropped server-side. */}
+            <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+              <label>
+                Website
+                <input
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </label>
+            </div>
+
+            <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 22, fontSize: 14, lineHeight: 1.5, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                style={{ marginTop: 3, width: 16, height: 16, flexShrink: 0 }}
+              />
+              <span className="muted">
+                I confirm this report is truthful and based on my own genuine experience, I have the right to share any evidence I&rsquo;ve attached, and I agree to the{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="btn-link">Terms</a>.
+              </span>
+            </label>
+
+            <Turnstile onToken={setTurnstileToken} />
+
             {errorMessage && (
               <div style={{ marginTop: 12, padding: 12, background: 'var(--bg-2)', color: 'var(--danger)', borderRadius: 8, fontSize: 13 }}>
                 {errorMessage}
@@ -287,7 +447,20 @@ export function ReportForm() {
             {step === 2 && imageBusy ? 'Processing photos…' : 'Continue'} <Icon name="arrow-right" size={14} />
           </button>
         ) : (
-          <button className="btn btn-accent" onClick={handleSubmit} disabled={status === "loading" || imageBusy}>
+          <button
+            className="btn btn-accent"
+            onClick={handleSubmit}
+            disabled={
+              status === "loading" ||
+              imageBusy ||
+              !termsAccepted ||
+              (turnstileRequired && !turnstileToken)
+            }
+            style={{
+              opacity:
+                termsAccepted && !(turnstileRequired && !turnstileToken) ? 1 : 0.4,
+            }}
+          >
             {status === "loading" ? (submitLabel || "Submitting…") : "Submit report"} <Icon name="check" size={14} />
           </button>
         )}
@@ -361,7 +534,7 @@ function StepOrder({ form, handleChange }: any) {
   );
 }
 
-function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFiles, onRemoveImage }: any) {
+function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFiles, onRemoveImage, receipts, receiptError, receiptBusy, onAddReceipts, onRemoveReceipt }: any) {
   const len = form.details.length;
   const room = MAX_IMAGES_PER_REPORT - images.length;
   return (
@@ -432,6 +605,36 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
         )}
       </div>
 
+      <div className="field">
+        <label className="label">
+          Order receipt <span className="label-hint">optional &amp; private — a screenshot of your platform order/receipt. Never shown publicly; only a moderator sees it to confirm you really purchased. Earns a &ldquo;Purchase verified&rdquo; badge.</span>
+        </label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          {receipts.map((image: PreparedImage, i: number) => (
+            <div key={image.id} style={{ position: 'relative', width: 96, height: 96 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={image.previewUrl} alt={`Receipt ${i + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line-2)', display: 'block' }} />
+              <button type="button" onClick={() => onRemoveReceipt(image.id)} aria-label={`Remove receipt ${i + 1}`}
+                style={{ position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: 999, background: 'var(--ink)', color: '#fff', border: '2px solid var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0 }}>
+                ×
+              </button>
+            </div>
+          ))}
+          {receipts.length < MAX_RECEIPTS_PER_REPORT && (
+            <label style={{ width: 96, height: 96, borderRadius: 10, border: '1px dashed var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: receiptBusy ? 'wait' : 'pointer', color: 'var(--muted)', fontSize: 11, textAlign: 'center' }}>
+              <input type="file" accept="image/*" multiple disabled={receiptBusy} style={{ display: 'none' }}
+                onChange={(e) => { onAddReceipts(e.target.files); e.target.value = ''; }} />
+              <Icon name="lock" size={16} />
+              {receiptBusy ? 'Processing…' : 'Add receipt'}
+            </label>
+          )}
+        </div>
+        {receiptError && (
+          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{receiptError}</div>
+        )}
+      </div>
+
       <div style={{ background: 'var(--bg-2)', border: '1px dashed var(--line-2)', borderRadius: 10, padding: 14, fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>
         <strong style={{ color: 'var(--ink-2)' }}>Tips:</strong> Include the timeline, the dispute outcome, and any responses from the seller. Don&rsquo;t include anything you don&rsquo;t want public in the photos or blur out certain parts.
       </div>
@@ -491,9 +694,55 @@ function StepReview({ form, images, jump }: any) {
   );
 }
 
-function Submitted({ onReset }: { onReset: () => void }) {
+function Submitted({
+  reportId,
+  claimSecret,
+  onReset,
+}: {
+  reportId: string | null;
+  claimSecret: string | null;
+  onReset: () => void;
+}) {
+  // Only offer email capture when we have the one-time handoff from submit.
+  const canClaim = Boolean(reportId && claimSecret);
+  const [email, setEmail] = useState("");
+  const [claimState, setClaimState] = useState<
+    "idle" | "loading" | "sent" | "error"
+  >("idle");
+  const [claimError, setClaimError] = useState("");
+
+  const attachEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canClaim || claimState === "loading") return;
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    setClaimState("loading");
+    setClaimError("");
+    try {
+      const res = await fetch("/api/manage/attach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          report_id: reportId,
+          claim_secret: claimSecret,
+          email: trimmed,
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(
+          payload?.error || "Couldn't send the link. Please try again.",
+        );
+      }
+      setClaimState("sent");
+    } catch (err) {
+      setClaimState("error");
+      setClaimError(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  };
+
   return (
-    <section style={{ paddingTop: 80, paddingBottom: 100, textAlign: 'center' }}>
+    <section style={{ paddingTop: 64, paddingBottom: 100, textAlign: 'center' }}>
       <div className="container-narrow">
         <div style={{
           width: 72, height: 72, borderRadius: 999, margin: '0 auto 24px',
@@ -509,12 +758,61 @@ function Submitted({ onReset }: { onReset: () => void }) {
         <p style={{ fontSize: 18, color: 'var(--ink-2)', marginTop: 16, lineHeight: 1.55, fontFamily: 'var(--serif)' }}>
           A human moderator will review your report within 48 hours. If everything checks out, it&rsquo;ll go live with its own URL — and the next buyer Googling that seller will find it.
         </p>
-        <p className="muted small" style={{ marginTop: 12 }}>
-          We won&rsquo;t email you (no accounts, remember?). If we have questions, we&rsquo;ll publish anyway with anything we couldn&rsquo;t verify clearly flagged.
-        </p>
+
+        {canClaim && claimState !== "sent" && (
+          <div className="paper" style={{ padding: 24, marginTop: 32, textAlign: 'left' }}>
+            <h2 style={{ fontSize: 18, letterSpacing: '-.01em', marginBottom: 8 }}>
+              Want to update or delete this report later?
+            </h2>
+            <p className="muted small" style={{ lineHeight: 1.55, marginBottom: 16 }}>
+              Things change — the seller might refund you, ship a replacement, or settle. Add your email and we&rsquo;ll send a private link to manage this report. No password, no account to remember. Skip it and your report still goes live; you just won&rsquo;t be able to edit it afterward.
+            </p>
+            <form onSubmit={attachEmail} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <input
+                type="email"
+                required
+                className="input"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={claimState === "loading"}
+                style={{ flex: '1 1 220px' }}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={claimState === "loading" || !email.trim()}
+              >
+                {claimState === "loading" ? "Sending…" : "Email me the link"}
+              </button>
+            </form>
+            {claimState === "error" && (
+              <div style={{ marginTop: 10, fontSize: 13, color: 'var(--danger)' }}>{claimError}</div>
+            )}
+            <p className="muted" style={{ fontSize: 12, marginTop: 12, lineHeight: 1.5 }}>
+              We only use your email to send this manage link and to tell you once your report is reviewed. It&rsquo;s never shown publicly.
+            </p>
+          </div>
+        )}
+
+        {claimState === "sent" && (
+          <div className="paper" style={{ padding: 24, marginTop: 32, textAlign: 'left' }}>
+            <h2 style={{ fontSize: 18, letterSpacing: '-.01em', marginBottom: 8 }}>Check your inbox</h2>
+            <p className="muted small" style={{ lineHeight: 1.55 }}>
+              If that address is valid, we just sent a private link to manage this report. Click it to confirm — then you can update or delete your report any time.
+            </p>
+          </div>
+        )}
+
+        {!canClaim && (
+          <p className="muted small" style={{ marginTop: 12 }}>
+            If we have questions, we&rsquo;ll publish anyway with anything we couldn&rsquo;t verify clearly flagged.
+          </p>
+        )}
+
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
           <a href="/reports" className="btn btn-primary">Browse other reports</a>
-          <a href="/" className="btn btn-ghost">Back to home</a>
+          <button type="button" onClick={onReset} className="btn btn-ghost">Submit another report</button>
         </div>
       </div>
     </section>

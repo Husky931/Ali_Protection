@@ -1,4 +1,6 @@
-export type ReportStatus = "pending" | "approved" | "rejected";
+export type ReportStatus = "pending" | "approved" | "rejected" | "retracted";
+
+export type ReportUpdateStatus = "pending" | "approved" | "rejected";
 
 export type Report = {
   id: string;
@@ -18,7 +20,15 @@ export type Report = {
   details: string;
   status: ReportStatus;
   slug: string;
+  // Admin-set; drives the public "Purchase verified" badge.
+  purchase_verified: boolean;
 };
+
+// NOTE: the sensitive submitter columns (submitter_email, manage_token_hash,
+// claim_secret_hash, ...) are deliberately NOT on the public `Report` type.
+// Code that needs them selects them explicitly so they can never ride along
+// into a payload serialized to the browser. Use `typeof reports.$inferSelect`
+// for the full internal row.
 
 export type ReportInsert = {
   platform?: string;
@@ -42,7 +52,18 @@ export type ReportImage = {
   content_type: string;
   size_bytes: number;
   position: number;
+  kind: "evidence" | "receipt";
   created_at: string | Date;
+};
+
+// A submitter-appended note on an approved report, shown publicly once approved.
+export type ReportUpdate = {
+  id: string;
+  report_id: string;
+  body: string;
+  status: ReportUpdateStatus;
+  created_at: string | Date;
+  updated_at: string | Date | null;
 };
 
 // Admin moderation queue payload: pending images are served via short-lived
@@ -52,6 +73,24 @@ export type AdminReportImage = {
   url: string;
 };
 
+// Another report that shares this one's seller URL or submitter email — shown to
+// the moderator as a "possible duplicate" hint. Never auto-blocked: several
+// genuine victims of the same seller is valuable corroboration.
+export type AdminReportDuplicate = {
+  id: string;
+  slug: string;
+  seller_name: string;
+  status: ReportStatus;
+};
+
+// The admin payload deliberately omits the secret columns (manage_token_hash,
+// claim_secret_hash, claim_expires_at) and the raw submitter_email — only
+// derived, non-sensitive signals are sent to the moderation client.
 export type AdminReport = Report & {
   images: AdminReportImage[];
+  // Private order receipts (admin-only); never shown on the public page.
+  receipts: AdminReportImage[];
+  has_email: boolean;
+  email_verified: boolean;
+  possible_duplicates: AdminReportDuplicate[];
 };

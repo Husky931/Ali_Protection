@@ -59,7 +59,11 @@ export function Footer() {
           ]} />
           <FooterCol title="About" links={[
             { label: 'Why this exists', href: '/#why' },
-            { label: 'Contact', href: 'mailto:hi@example.com' },
+            { label: 'Contact', href: '/contact' },
+          ]} />
+          <FooterCol title="Legal" links={[
+            { label: 'Terms', href: '/terms' },
+            { label: 'Privacy', href: '/privacy' },
             { label: 'Disclaimer', href: '/disclaimer' },
           ]} />
         </div>

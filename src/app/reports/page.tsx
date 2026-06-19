@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { reports } from '@/lib/db/schema';
 import { desc, eq, and, like, or } from 'drizzle-orm';
 import { Report } from '@/lib/reportTypes';
+import { publicReportColumns } from '@/lib/reportSelect';
 import { SearchBox, ReportRow } from '@/components/SearchBox';
 import { SortSelect } from '@/components/SortSelect';
 import { Icon } from '@/components/Navbar';
@@ -55,7 +56,7 @@ export default async function BrowsePage({
 
   const orderBy = sort === 'biggest' ? desc(reports.total_price) : desc(reports.created_at);
   const filteredReports = await db
-    .select()
+    .select(publicReportColumns)
     .from(reports)
     .where(and(...conditions))
     .orderBy(orderBy);
