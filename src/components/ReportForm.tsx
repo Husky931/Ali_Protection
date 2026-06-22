@@ -162,10 +162,10 @@ export function ReportForm() {
   };
 
   const steps = [
-    { num: '01', label: 'Seller' },
-    { num: '02', label: 'Order' },
-    { num: '03', label: 'Story' },
-    { num: '04', label: 'Review' },
+    { label: 'Seller' },
+    { label: 'Order' },
+    { label: 'Story' },
+    { label: 'Review' },
   ];
 
   const stepValid = [
