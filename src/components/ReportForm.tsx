@@ -171,7 +171,7 @@ export function ReportForm() {
   const stepValid = [
     form.seller_name.trim() && form.seller_url.trim(),
     form.product_name.trim() && form.quantity && form.total_price && form.industry,
-    form.details.trim().length > 60,
+    form.details.trim().length > 60 && images.length > 0 && receipts.length > 0,
     true,
   ];
 
@@ -443,10 +443,10 @@ export function ReportForm() {
         </button>
         {step < 3 ? (
           <button className="btn btn-primary"
-            disabled={!stepValid[step] || (step === 2 && imageBusy)}
+            disabled={!stepValid[step] || (step === 2 && (imageBusy || receiptBusy))}
             onClick={() => setStep(step + 1)}
-            style={{ opacity: stepValid[step] && !(step === 2 && imageBusy) ? 1 : 0.4 }}>
-            {step === 2 && imageBusy ? 'Processing photos…' : 'Continue'} <Icon name="arrow-right" size={14} />
+            style={{ opacity: stepValid[step] && !(step === 2 && (imageBusy || receiptBusy)) ? 1 : 0.4 }}>
+            {step === 2 && (imageBusy || receiptBusy) ? 'Processing photos…' : 'Continue'} <Icon name="arrow-right" size={14} />
           </button>
         ) : (
           <button
@@ -555,7 +555,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
 
       <div className="field">
         <label className="label">
-          Photos <span className="label-hint">optional, up to {MAX_IMAGES_PER_REPORT} — chat screenshots, payment receipts, received products</span>
+          Photos <span className="label-hint">required, up to {MAX_IMAGES_PER_REPORT} — chat screenshots, payment receipts, received products</span>
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {images.map((image: PreparedImage, i: number) => (
@@ -609,7 +609,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
 
       <div className="field">
         <label className="label">
-          Order receipt <span className="label-hint">optional &amp; private — a screenshot of your platform order/receipt. Never shown publicly; only a moderator sees it to confirm you really purchased. Earns a &ldquo;Purchase verified&rdquo; badge.</span>
+          Order receipt <span className="label-hint">required &amp; private — a screenshot of your platform order/receipt. Never shown publicly; only a moderator sees it to confirm you really purchased. Earns a &ldquo;Purchase verified&rdquo; badge.</span>
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {receipts.map((image: PreparedImage, i: number) => (

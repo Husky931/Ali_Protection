@@ -4,6 +4,7 @@
 // The canvas round-trip is what guarantees EXIF/GPS data never leaves the
 // reporter's device — important for a site promising anonymous reports.
 
+import { heicTo, isHeic } from "heic-to";
 import {
   MAX_IMAGE_BYTES,
   isAllowedImageType,
@@ -29,7 +30,22 @@ export type PreparedImage = {
 
 type DecodedImage = ImageBitmap | HTMLImageElement;
 
-async function decodeImage(file: File): Promise<DecodedImage> {
+// iPhones default to HEIC, which only Safari can decode natively — Chrome,
+// Firefox and Edge throw on it. Detect it by magic bytes (extension/MIME are
+// unreliable) and transcode to JPEG via a WASM build of libheif before the
+// rest of the pipeline. The heavy WASM only loads when an actual HEIC appears.
+async function toDecodableBlob(file: File): Promise<Blob> {
+  let heic = false;
+  try {
+    heic = await isHeic(file);
+  } catch {
+    heic = false;
+  }
+  if (!heic) return file;
+  return heicTo({ blob: file, type: "image/jpeg", quality: 0.92 });
+}
+
+async function decodeImage(file: Blob): Promise<DecodedImage> {
   // createImageBitmap applies EXIF orientation; older Safari throws on the
   // options bag, very old browsers lack the API entirely.
   try {
@@ -72,7 +88,7 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
 
   let source: DecodedImage;
   try {
-    source = await decodeImage(file);
+    source = await decodeImage(await toDecodableBlob(file));
   } catch {
     throw new Error(
       "Couldn't read that image. Try a JPEG, PNG, or screenshot instead.",
