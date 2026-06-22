@@ -7,8 +7,10 @@
 import { heicTo, isHeic } from "heic-to";
 import {
   MAX_IMAGE_BYTES,
+  MAX_RECEIPT_BYTES,
   isAllowedImageType,
   type AllowedImageType,
+  type AllowedReceiptType,
 } from "@/lib/images";
 
 const MAX_DIMENSION = 1600;
@@ -149,4 +151,42 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
     contentType: blob.type,
     previewUrl: URL.createObjectURL(blob),
   };
+}
+
+// A prepared order receipt: either a processed image (same pipeline as evidence)
+// or a PDF passed through untouched. Receipts are private (admin-only), so PDFs
+// are accepted as-is — we can't canvas-strip metadata from a PDF, and there's
+// no public exposure to harden against.
+export type PreparedReceipt = {
+  id: string;
+  blob: Blob;
+  contentType: AllowedReceiptType;
+  previewUrl: string;
+  isPdf: boolean;
+  fileName: string;
+};
+
+export async function prepareReceipt(file: File): Promise<PreparedReceipt> {
+  const isPdf =
+    file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+
+  if (isPdf) {
+    if (file.size > MAX_RECEIPT_BYTES) {
+      throw new Error("That PDF is over 10 MB. Please upload a smaller file.");
+    }
+    if (file.size <= 0) {
+      throw new Error("That file looks empty. Try a different one.");
+    }
+    return {
+      id: crypto.randomUUID(),
+      blob: file,
+      contentType: "application/pdf",
+      previewUrl: URL.createObjectURL(file),
+      isPdf: true,
+      fileName: file.name || "receipt.pdf",
+    };
+  }
+
+  const image = await prepareImage(file);
+  return { ...image, isPdf: false, fileName: file.name || "receipt" };
 }

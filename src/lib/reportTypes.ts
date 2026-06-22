@@ -71,6 +71,8 @@ export type ReportUpdate = {
 export type AdminReportImage = {
   id: string;
   url: string;
+  // Receipts may be PDFs; the admin UI renders those as a link instead of <img>.
+  contentType: string;
 };
 
 // Another report that shares this one's seller URL or submitter email — shown to

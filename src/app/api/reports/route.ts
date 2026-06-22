@@ -9,9 +9,11 @@ import {
   MAX_IMAGES_PER_REPORT,
   MAX_RECEIPTS_PER_REPORT,
   MAX_IMAGE_BYTES,
+  MAX_RECEIPT_BYTES,
   PENDING_KEY_PATTERN,
   RECEIPT_KEY_PATTERN,
   isAllowedImageType,
+  isAllowedReceiptType,
 } from "@/lib/images";
 import { headObject, deleteObjects, r2Configured } from "@/lib/r2";
 import { isRateLimited } from "@/lib/rateLimit";
@@ -42,6 +44,8 @@ async function verifyUploadBatch(
   pattern: RegExp,
   max: number,
   noun: string,
+  typeAllowed: (value: string) => boolean,
+  maxBytes: number,
 ): Promise<VerifyResult> {
   const keys = Array.from(
     new Set(Array.isArray(rawKeys) ? rawKeys : []),
@@ -68,9 +72,9 @@ async function verifyUploadBatch(
       const meta = await headObject(key);
       if (
         !meta ||
-        !isAllowedImageType(meta.contentType) ||
+        !typeAllowed(meta.contentType) ||
         meta.sizeBytes <= 0 ||
-        meta.sizeBytes > MAX_IMAGE_BYTES
+        meta.sizeBytes > maxBytes
       ) {
         await deleteObjects(keys);
         return {
@@ -184,6 +188,8 @@ export async function POST(request: Request) {
     PENDING_KEY_PATTERN,
     MAX_IMAGES_PER_REPORT,
     "photos",
+    isAllowedImageType,
+    MAX_IMAGE_BYTES,
   );
   if (!evidence.ok) {
     return NextResponse.json({ error: evidence.error }, { status: evidence.status });
@@ -193,6 +199,8 @@ export async function POST(request: Request) {
     RECEIPT_KEY_PATTERN,
     MAX_RECEIPTS_PER_REPORT,
     "receipts",
+    isAllowedReceiptType,
+    MAX_RECEIPT_BYTES,
   );
   if (!receipts.ok) {
     return NextResponse.json({ error: receipts.error }, { status: receipts.status });

@@ -4,10 +4,29 @@ import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./Navbar";
 import { INDUSTRIES, CURRENCIES, PLATFORMS } from "@/lib/constants";
 import { formatMoney } from "@/lib/utils";
-import { prepareImage, type PreparedImage } from "@/lib/clientImage";
+import {
+  prepareImage,
+  prepareReceipt,
+  type PreparedImage,
+  type PreparedReceipt,
+} from "@/lib/clientImage";
 import { MAX_IMAGES_PER_REPORT, MAX_RECEIPTS_PER_REPORT } from "@/lib/images";
 import { Turnstile, turnstileRequired } from "./Turnstile";
 import { TERMS_VERSION } from "@/lib/terms";
+
+// Small inline spinner reusing the global `spin` keyframe (globals.css).
+function TileSpinner() {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 18, height: 18, borderRadius: '50%',
+        border: '2px solid var(--line-2)', borderTopColor: 'var(--accent)',
+        animation: 'spin 0.7s linear infinite', display: 'inline-block',
+      }}
+    />
+  );
+}
 
 const initialState = {
   seller_name: '',
@@ -38,7 +57,7 @@ export function ReportForm() {
   const [reportId, setReportId] = useState<string | null>(null);
   const [claimSecret, setClaimSecret] = useState<string | null>(null);
   // Optional, private order receipts (kept separate from public evidence photos).
-  const [receipts, setReceipts] = useState<PreparedImage[]>([]);
+  const [receipts, setReceipts] = useState<PreparedReceipt[]>([]);
   const [receiptError, setReceiptError] = useState("");
   const [receiptBusy, setReceiptBusy] = useState(false);
 
@@ -48,7 +67,7 @@ export function ReportForm() {
 
   // Mirror state so the unmount cleanup below sees the latest previews.
   const imagesRef = useRef<PreparedImage[]>([]);
-  const receiptsRef = useRef<PreparedImage[]>([]);
+  const receiptsRef = useRef<PreparedReceipt[]>([]);
   useEffect(() => {
     imagesRef.current = images;
   }, [images]);
@@ -110,15 +129,15 @@ export function ReportForm() {
     setReceiptBusy(true);
     const room = MAX_RECEIPTS_PER_REPORT - receipts.length;
     const picked = Array.from(files).slice(0, room);
-    const prepared: PreparedImage[] = [];
+    const prepared: PreparedReceipt[] = [];
     let failedCount = 0;
     let lastFailure = "";
     for (const file of picked) {
       try {
-        prepared.push(await prepareImage(file));
+        prepared.push(await prepareReceipt(file));
       } catch (error) {
         failedCount++;
-        lastFailure = error instanceof Error ? error.message : "Couldn't read that image.";
+        lastFailure = error instanceof Error ? error.message : "Couldn't read that file.";
       }
     }
     setReceipts((prev) => {
@@ -597,7 +616,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
                   e.target.value = '';
                 }}
               />
-              <Icon name="camera" size={16} />
+              {imageBusy ? <TileSpinner /> : <Icon name="camera" size={16} />}
               {imageBusy ? 'Processing…' : 'Add photos'}
             </label>
           )}
@@ -609,14 +628,22 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
 
       <div className="field">
         <label className="label">
-          Order receipt <span className="label-hint">required &amp; private — a screenshot of your platform order/receipt. Never shown publicly; only a moderator sees it to confirm you really purchased. Earns a &ldquo;Purchase verified&rdquo; badge.</span>
+          Order receipt <span className="label-hint">required &amp; private — a screenshot or PDF of your platform order/receipt. Never shown publicly; only a moderator sees it to confirm you really purchased. Earns a &ldquo;Purchase verified&rdquo; badge.</span>
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          {receipts.map((image: PreparedImage, i: number) => (
+          {receipts.map((image: PreparedReceipt, i: number) => (
             <div key={image.id} style={{ position: 'relative', width: 96, height: 96 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.previewUrl} alt={`Receipt ${i + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line-2)', display: 'block' }} />
+              {image.isPdf ? (
+                <div title={image.fileName}
+                  style={{ width: '100%', height: '100%', borderRadius: 8, border: '1px solid var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--ink-2)', padding: 6, textAlign: 'center' }}>
+                  <Icon name="file-text" size={22} />
+                  <span style={{ fontSize: 10, fontWeight: 600 }}>PDF</span>
+                </div>
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={image.previewUrl} alt={`Receipt ${i + 1}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line-2)', display: 'block' }} />
+              )}
               <button type="button" onClick={() => onRemoveReceipt(image.id)} aria-label={`Remove receipt ${i + 1}`}
                 style={{ position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: 999, background: 'var(--ink)', color: 'var(--bg)', border: '2px solid var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0 }}>
                 ×
@@ -625,9 +652,9 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
           ))}
           {receipts.length < MAX_RECEIPTS_PER_REPORT && (
             <label style={{ width: 96, height: 96, borderRadius: 8, border: '1px dashed var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: receiptBusy ? 'wait' : 'pointer', color: 'var(--muted)', fontSize: 11, textAlign: 'center' }}>
-              <input type="file" accept="image/*" multiple disabled={receiptBusy} style={{ display: 'none' }}
+              <input type="file" accept="image/*,application/pdf" multiple disabled={receiptBusy} style={{ display: 'none' }}
                 onChange={(e) => { onAddReceipts(e.target.files); e.target.value = ''; }} />
-              <Icon name="lock" size={16} />
+              {receiptBusy ? <TileSpinner /> : <Icon name="lock" size={16} />}
               {receiptBusy ? 'Processing…' : 'Add receipt'}
             </label>
           )}

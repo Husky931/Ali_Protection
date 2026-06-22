@@ -275,17 +275,31 @@ export default function AdminPage() {
                       <Icon name="lock" size={12} /> Order receipt — private, never published ({report.receipts.length})
                     </div>
                     <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      {report.receipts.map((image, i) => (
-                        <a key={image.id} href={image.url} target="_blank" rel="noreferrer" title="Open full size">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={image.url}
-                            alt={`Order receipt ${i + 1}`}
-                            loading="lazy"
-                            style={{ width: 110, height: 110, objectFit: "cover", borderRadius: 8, border: "1px solid var(--line-2)", display: "block" }}
-                          />
-                        </a>
-                      ))}
+                      {report.receipts.map((image, i) =>
+                        image.contentType === "application/pdf" ? (
+                          <a
+                            key={image.id}
+                            href={image.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open PDF receipt"
+                            style={{ width: 110, height: 110, borderRadius: 8, border: "1px solid var(--line-2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--bg-2)", color: "var(--ink-2)", textDecoration: "none", fontSize: 11, fontWeight: 600 }}
+                          >
+                            <Icon name="file-text" size={26} />
+                            PDF receipt
+                          </a>
+                        ) : (
+                          <a key={image.id} href={image.url} target="_blank" rel="noreferrer" title="Open full size">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={image.url}
+                              alt={`Order receipt ${i + 1}`}
+                              loading="lazy"
+                              style={{ width: 110, height: 110, objectFit: "cover", borderRadius: 8, border: "1px solid var(--line-2)", display: "block" }}
+                            />
+                          </a>
+                        )
+                      )}
                     </div>
                   </div>
                 ) : null}

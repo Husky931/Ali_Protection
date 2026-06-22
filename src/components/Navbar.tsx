@@ -121,6 +121,7 @@ export function Icon({ name, size = 18, className }: { name: string; size?: numb
     case 'link': return (<svg {...props}><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>);
     case 'x': return (<svg {...props}><path d="M6 6l12 12M18 6L6 18" /></svg>);
     case 'camera': return (<svg {...props}><path d="M3 8a2 2 0 0 1 2-2h2l2-3h6l2 3h2a2 2 0 0 1 2 2v11H3V8z" /><circle cx="12" cy="13" r="3.5" /></svg>);
+    case 'file-text': return (<svg {...props}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h6" /></svg>);
     default: return null;
   }
 }

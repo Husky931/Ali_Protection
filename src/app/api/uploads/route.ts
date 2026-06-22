@@ -5,8 +5,12 @@ import {
   MAX_IMAGES_PER_REPORT,
   MAX_RECEIPTS_PER_REPORT,
   MAX_IMAGE_BYTES,
+  MAX_RECEIPT_BYTES,
   isAllowedImageType,
+  isAllowedReceiptType,
   imageExtension,
+  receiptExtension,
+  type AllowedReceiptType,
 } from "@/lib/images";
 import { presignUpload, r2Configured } from "@/lib/r2";
 import { isRateLimited } from "@/lib/rateLimit";
@@ -55,6 +59,9 @@ export async function POST(request: Request) {
   const isReceipt = body.kind === "receipt";
   const prefix = isReceipt ? "receipts" : "pending";
   const maxFiles = isReceipt ? MAX_RECEIPTS_PER_REPORT : MAX_IMAGES_PER_REPORT;
+  // Receipts additionally accept PDF and get a looser byte cap.
+  const typeAllowed = isReceipt ? isAllowedReceiptType : isAllowedImageType;
+  const maxBytes = isReceipt ? MAX_RECEIPT_BYTES : MAX_IMAGE_BYTES;
 
   const files = body.files;
   if (!Array.isArray(files) || files.length === 0) {
@@ -70,10 +77,14 @@ export async function POST(request: Request) {
   for (const file of files) {
     if (
       typeof file?.content_type !== "string" ||
-      !isAllowedImageType(file.content_type)
+      !typeAllowed(file.content_type)
     ) {
       return NextResponse.json(
-        { error: "Only WebP or JPEG images are accepted." },
+        {
+          error: isReceipt
+            ? "Receipts must be a WebP/JPEG image or a PDF."
+            : "Only WebP or JPEG images are accepted.",
+        },
         { status: 400 }
       );
     }
@@ -81,10 +92,14 @@ export async function POST(request: Request) {
       typeof file.size_bytes !== "number" ||
       !Number.isInteger(file.size_bytes) ||
       file.size_bytes <= 0 ||
-      file.size_bytes > MAX_IMAGE_BYTES
+      file.size_bytes > maxBytes
     ) {
       return NextResponse.json(
-        { error: "Each photo must be under 4 MB." },
+        {
+          error: isReceipt
+            ? "Each receipt must be under 10 MB."
+            : "Each photo must be under 4 MB.",
+        },
         { status: 400 }
       );
     }
@@ -93,9 +108,12 @@ export async function POST(request: Request) {
   try {
     const uploads = await Promise.all(
       files.map(async (file) => {
-        const contentType = file.content_type as "image/webp" | "image/jpeg";
+        const contentType = file.content_type as AllowedReceiptType;
         const sizeBytes = file.size_bytes as number;
-        const key = `${prefix}/${crypto.randomUUID()}.${imageExtension(contentType)}`;
+        const ext = isReceipt
+          ? receiptExtension(contentType)
+          : imageExtension(contentType as "image/webp" | "image/jpeg");
+        const key = `${prefix}/${crypto.randomUUID()}.${ext}`;
         const url = await presignUpload(key, contentType, sizeBytes);
         return { key, url };
       })

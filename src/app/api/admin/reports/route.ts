@@ -57,7 +57,11 @@ export async function GET(request: Request) {
         const target =
           item.row.kind === "receipt" ? receiptsByReport : imagesByReport;
         const list = target.get(item.row.report_id) ?? [];
-        list.push({ id: item.row.id, url: item.url });
+        list.push({
+          id: item.row.id,
+          url: item.url,
+          contentType: item.row.content_type,
+        });
         target.set(item.row.report_id, list);
       }
     }
