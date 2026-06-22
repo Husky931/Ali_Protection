@@ -13,6 +13,17 @@ function hashId(id: string): string {
   return createHash("sha256").update(`${id}:${SALT}`).digest("hex").slice(0, 32);
 }
 
+// IPs exempt from rate limiting (temporary seeding/admin use). Comma-separated.
+// Unset in normal operation, so this is a no-op in production. The id passed for
+// the "reports"/"uploads" scopes is the caller's IP; the email scopes pass an
+// email, which can never match an IP entry — so those stay limited.
+const BYPASS_IDS = new Set(
+  (process.env.RATE_LIMIT_BYPASS_IPS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
+
 /**
  * Persisted, fixed-window rate limit. Returns `true` if the caller is OVER the
  * limit for the current window (i.e. the request should be rejected).
@@ -32,6 +43,8 @@ export async function isRateLimited(
   limit: number,
   windowSec: number,
 ): Promise<boolean> {
+  if (BYPASS_IDS.has(id)) return false;
+
   const now = Date.now();
   const windowStart = Math.floor(now / 1000 / windowSec) * windowSec;
   const bucketKey = `${scope}:${hashId(id)}:${windowStart}`;
