@@ -5,6 +5,7 @@ import { reports } from '@/lib/db/schema';
 import { desc, eq, and, like, or } from 'drizzle-orm';
 import { Report } from '@/lib/reportTypes';
 import { publicReportColumns } from '@/lib/reportSelect';
+import { getEvidenceUrlsByReport } from '@/lib/reportImages';
 import { SearchBox, ReportRow } from '@/components/SearchBox';
 import { SortSelect } from '@/components/SortSelect';
 import { Icon } from '@/components/Navbar';
@@ -63,6 +64,7 @@ export default async function BrowsePage({
 
   const allReports = await db.select().from(reports).where(eq(reports.status, 'approved'));
   const industries = ['All', ...new Set(allReports.map((r) => r.industry))];
+  const imagesByReport = await getEvidenceUrlsByReport(filteredReports.map((r) => r.id));
 
   return (
     <div className="page">
@@ -118,7 +120,7 @@ export default async function BrowsePage({
           ) : (
             <div className="stack" style={{ gap: 12 }}>
               {filteredReports.map((r) => (
-                <ReportRow key={r.id} report={r as Report} />
+                <ReportRow key={r.id} report={r as Report} images={imagesByReport.get(r.id)} />
               ))}
             </div>
           )}

@@ -36,7 +36,7 @@ import { Report } from '@/lib/reportTypes';
 import { formatMoney, relativeDate } from '@/lib/utils';
 import Link from 'next/link';
 
-export function ReportRow({ report }: { report: Report }) {
+export function ReportRow({ report, images = [] }: { report: Report; images?: string[] }) {
   const r = report;
   return (
     <Link
@@ -71,8 +71,22 @@ export function ReportRow({ report }: { report: Report }) {
           {r.product_name} · qty {typeof r.quantity === 'string' ? parseInt(r.quantity).toLocaleString() : r.quantity.toLocaleString()}
         </div>
         <p style={{ margin: 0, color: 'var(--ink-2)', fontSize: 14.5, lineHeight: 1.55, maxWidth: 720 }}>
-          &ldquo;{r.details.slice(0, 160)}...&rdquo;
+          &ldquo;{r.details.slice(0, 650)}{r.details.length > 650 ? '...' : ''}&rdquo;
         </p>
+        {images.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+            {images.map((url, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={url}
+                src={url}
+                alt={`Evidence photo ${i + 1} from ${r.seller_name} report`}
+                loading="lazy"
+                style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)', display: 'block', background: 'var(--bg-2)' }}
+              />
+            ))}
+          </div>
+        )}
       </div>
       <div style={{ textAlign: 'right', minWidth: 130, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
@@ -82,8 +96,8 @@ export function ReportRow({ report }: { report: Report }) {
           </div>
           <div className="muted small" style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>{r.currency}</div>
         </div>
-        <div className="small" style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 12 }}>
-          Read <Icon name="arrow-right" size={13} />
+        <div style={{ color: 'var(--accent-ink)', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end', marginTop: 12 }}>
+          Read <Icon name="arrow-right" size={15} />
         </div>
       </div>
     </Link>

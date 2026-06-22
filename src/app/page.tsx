@@ -8,22 +8,31 @@ import { reports } from '@/lib/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { Report } from '@/lib/reportTypes';
 import { publicReportColumns } from '@/lib/reportSelect';
+import { getEvidenceUrlsByReport } from '@/lib/reportImages';
+
+// The homepage feed reads newly-approved reports from the DB. Without this it is
+// statically prerendered at build time and never reflects reports approved after
+// a deploy (the bug where /reports showed a report but the homepage stayed empty).
+// ISR: serve a cached page but regenerate at most once a minute so new approvals
+// surface quickly while crawlers still get a fast, cacheable response.
+export const revalidate = 60;
 
 export default async function LandingPage() {
   const recentReports = await db.select(publicReportColumns)
     .from(reports)
     .where(eq(reports.status, 'approved'))
     .orderBy(desc(reports.created_at))
-    .limit(4);
+    .limit(20);
 
   const totalReportsCount = await db.$count(reports, eq(reports.status, 'approved'));
+  const imagesByReport = await getEvidenceUrlsByReport(recentReports.map((r) => r.id));
 
   return (
     <div className="page">
       <Hero totalCount={totalReportsCount} />
       <WhySection />
       {/* <HowItWorks /> */}
-      <FeedPreview reports={recentReports as Report[]} />
+      <FeedPreview reports={recentReports as Report[]} imagesByReport={imagesByReport} />
       <CTAStrip />
     </div>
   );
@@ -178,7 +187,7 @@ function HowItWorks() {
   );
 }
 
-function FeedPreview({ reports }: { reports: Report[] }) {
+function FeedPreview({ reports, imagesByReport }: { reports: Report[]; imagesByReport: Map<string, string[]> }) {
   return (
     <section id="feed" style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
       <div className="container">
@@ -192,7 +201,7 @@ function FeedPreview({ reports }: { reports: Report[] }) {
         </div>
         <div className="stack" style={{ gap: 12 }}>
           {reports.map((r) => (
-            <ReportRow key={r.id} report={r} />
+            <ReportRow key={r.id} report={r} images={imagesByReport.get(r.id)} />
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: 28 }}>
