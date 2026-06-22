@@ -5,27 +5,33 @@
   --font-mono: var(--mono);
 }
 
+/*
+  Monochromatic danger-red theme.
+  Every color is derived from a single red hue (oklch hue ≈ 27): the saturated
+  brand reds (--accent / --danger) plus a full scale of red-tinted neutrals
+  (backgrounds, surfaces, lines, ink). Nothing warm-orange or off-hue remains.
+*/
 :root {
-  --bg: #f5f3ef;
-  --bg-2: #efece5;
-  --ink: #121212;
-  --ink-2: #2a2a2a;
-  --muted: #6b7280;
-  --muted-2: #9ca3af;
-  --line: #e2ddd2;
-  --line-2: #d8d3c6;
-  --card: #fffdf8;
-  --accent: oklch(0.68 0.19 48);   /* construction-cone orange */
-  --accent-ink: oklch(0.42 0.17 42);
-  --accent-soft: oklch(0.94 0.05 60);
-  --accent-soft-2: oklch(0.97 0.025 65);
-  --danger: oklch(0.58 0.21 27);
+  --bg: oklch(0.975 0.008 27);
+  --bg-2: oklch(0.955 0.013 27);
+  --ink: oklch(0.24 0.03 27);
+  --ink-2: oklch(0.34 0.035 27);
+  --muted: oklch(0.53 0.025 27);
+  --muted-2: oklch(0.55 0.025 27);
+  --line: oklch(0.90 0.014 27);
+  --line-2: oklch(0.86 0.02 27);
+  --card: oklch(0.992 0.004 27);
+  --accent: oklch(0.56 0.20 27);     /* danger red — the main brand color */
+  --accent-ink: oklch(0.45 0.16 27);
+  --accent-soft: oklch(0.95 0.03 27);
+  --accent-soft-2: oklch(0.975 0.015 27);
+  --danger: oklch(0.45 0.18 27);   /* darker, graver red — destructive actions, distinct from the brand CTA red */
   --serif: 'Newsreader', Georgia, serif;
   --sans: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
-  --shadow-sm: 0 1px 2px rgba(20,15,5,.04), 0 1px 1px rgba(20,15,5,.03);
-  --shadow-md: 0 4px 14px rgba(40,25,5,.06), 0 1px 3px rgba(40,25,5,.04);
-  --shadow-lg: 0 18px 40px rgba(40,25,5,.10), 0 4px 12px rgba(40,25,5,.05);
+  --shadow-sm: 0 1px 2px rgba(60,12,12,.05), 0 1px 1px rgba(60,12,12,.04);
+  --shadow-md: 0 4px 14px rgba(70,14,14,.07), 0 1px 3px rgba(70,14,14,.05);
+  --shadow-lg: 0 18px 40px rgba(70,14,14,.12), 0 4px 12px rgba(70,14,14,.06);
 }
 
 * { box-sizing: border-box; }
@@ -54,8 +60,8 @@ button { font-family: inherit; cursor: pointer; }
 .tape {
   position: absolute;
   width: 64px; height: 18px;
-  background: rgba(255, 220, 130, .55);
-  border: 1px solid rgba(180, 140, 30, .15);
+  background: oklch(0.72 0.13 27 / .38);
+  border: 1px solid oklch(0.5 0.15 27 / .22);
   transform: rotate(-3deg);
   top: -10px; left: 24px;
   box-shadow: 0 1px 1px rgba(0,0,0,.04);
@@ -63,7 +69,7 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Marker highlight on the word "Alibaba" */
 .marker {
-  background: linear-gradient(180deg, transparent 55%, oklch(0.86 0.16 75 / .85) 55%, oklch(0.86 0.16 75 / .85) 92%, transparent 92%);
+  background: linear-gradient(180deg, transparent 55%, oklch(0.78 0.15 27 / .55) 55%, oklch(0.78 0.15 27 / .55) 92%, transparent 92%);
   padding: 0 .12em;
 }
 
@@ -89,7 +95,7 @@ button { font-family: inherit; cursor: pointer; }
 .btn-accent {
   background: var(--accent);
   color: #fff;
-  border-color: oklch(0.55 0.18 45);
+  border-color: oklch(0.47 0.18 27);
   box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, var(--shadow-sm);
 }
 .btn-accent:hover { transform: translateY(-1px); }
@@ -120,7 +126,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .chip-orange {
   background: var(--accent-soft);
-  border-color: oklch(0.84 0.10 60);
+  border-color: oklch(0.85 0.08 27);
   color: var(--accent-ink);
 }
 .chip-mono { font-family: var(--mono); font-size: 11px; letter-spacing: -.02em; }
@@ -176,8 +182,8 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--accent);
   color: #fff;
   border-radius: 999px;
-  border: 1px solid oklch(0.55 0.18 45);
-  box-shadow: 0 14px 30px rgba(180, 80, 10, .28), 0 2px 6px rgba(180,80,10,.18);
+  border: 1px solid oklch(0.47 0.18 27);
+  box-shadow: 0 14px 30px rgba(170, 25, 20, .30), 0 2px 6px rgba(170,25,20,.18);
   font-weight: 600; font-size: 14px;
   transition: transform .15s ease;
 }
@@ -234,7 +240,7 @@ h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.02em; margin: 0; }
 .input:focus, .textarea:focus, .select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px oklch(0.68 0.19 48 / .15);
+  box-shadow: 0 0 0 3px oklch(0.56 0.20 27 / .18);
 }
 .textarea { min-height: 160px; resize: vertical; line-height: 1.55; }
 
@@ -243,6 +249,12 @@ h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.02em; margin: 0; }
 .stack { display: flex; flex-direction: column; gap: 16px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+/* Landing two-up sections: side-by-side on desktop, stacked on mobile */
+#hero > .container { grid-template-columns: 0.9fr 1.1fr; gap: 40px; }
+#why > .container { grid-template-columns: 0.9fr 1.1fr; gap: 64px; align-items: center; }
+#why h2 { font-size: clamp(36px, 7vw, 64px); }
+.hero-copy { padding: 80px 0 90px; }
+.hero-media { border-left: 1px solid var(--line); }
 .divider { height: 1px; background: var(--line); margin: 24px 0; }
 
 .muted { color: var(--muted); }
@@ -261,7 +273,7 @@ section { padding: 80px 0; }
 /* Slight grain to feel less SaaS */
 body::before {
   content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1;
-  background-image: radial-gradient(rgba(60,40,10,.045) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(90,20,15,.05) 1px, transparent 1px);
   background-size: 3px 3px;
   mix-blend-mode: multiply;
   opacity: .5;
@@ -307,5 +319,10 @@ body::before {
 
 @media (max-width: 720px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  #hero > .container, #why > .container { grid-template-columns: 1fr; }
+  #hero > .container { gap: 0; }
+  #why > .container { gap: 28px; align-items: flex-start; }
+  .hero-copy { padding: 48px 0 28px; }
+  .hero-media { border-left: none; border-top: 1px solid var(--line); }
   section { padding: 56px 0; }
 }

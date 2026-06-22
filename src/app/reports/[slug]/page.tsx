@@ -151,7 +151,7 @@ export default async function ReportDetailPage({
               <span
                 className="chip"
                 title="The buyer provided an order receipt that a moderator reviewed."
-                style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.84 0.10 60)' }}
+                style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.85 0.08 27)' }}
               >
                 <Icon name="check" size={12} /> Purchase verified
               </span>
@@ -241,7 +241,7 @@ export default async function ReportDetailPage({
           <div style={{
             marginTop: 36, padding: 28,
             background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-2))',
-            border: '1px solid oklch(0.84 0.10 60)',
+            border: '1px solid oklch(0.85 0.08 27)',
             borderRadius: 18,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 18, flexWrap: 'wrap',
           }}>

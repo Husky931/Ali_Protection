@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Navbar, Footer, FloatingReportButton } from "@/components/Navbar";
 import { Analytics } from "@/components/Analytics";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, OG_IMAGE } from "@/lib/site";
@@ -45,6 +45,10 @@ export const metadata: Metadata = {
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
+};
+
+export const viewport: Viewport = {
+  themeColor: "#c0322a",
 };
 
 export default function RootLayout({

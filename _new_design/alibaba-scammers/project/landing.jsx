@@ -97,10 +97,7 @@ function WhySection() {
     <section id="why" style={{background: "var(--bg)", borderBottom: "1px solid var(--line)"}}>
       <div className="container" style={{display: "grid", gridTemplateColumns: "0.9fr 1.1fr", gap: 64, alignItems: "flex-start"}}>
         <div>
-          <span className="eyebrow">Why this site exists</span>
-          <h2 style={{fontSize: 32, marginTop: 12, letterSpacing: "-.025em", lineHeight: 1.15, textWrap: "balance"}}>
-            I got scammed on Alibaba. Here&rsquo;s what happened, and why I built this.
-          </h2>
+          <h2 style={{fontSize: 32, marginTop: 12, letterSpacing: "-.025em", lineHeight: 1.15, textWrap: "balance"}}>I got scammed on Alibaba.</h2>
         </div>
         <div style={{fontFamily: "var(--serif)", fontSize: 19, lineHeight: 1.65, color: "var(--ink-2)", maxWidth: 580}}>
           <p style={{marginTop: 0}}>

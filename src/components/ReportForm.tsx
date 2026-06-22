@@ -748,7 +748,7 @@ function Submitted({
           width: 72, height: 72, borderRadius: 999, margin: '0 auto 24px',
           background: 'var(--accent-soft)', color: 'var(--accent-ink)',
           display: 'grid', placeItems: 'center',
-          border: '2px solid oklch(0.84 0.10 60)',
+          border: '2px solid oklch(0.85 0.08 27)',
         }}>
           <Icon name="check" size={32} />
         </div>

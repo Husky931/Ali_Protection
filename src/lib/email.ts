@@ -63,7 +63,7 @@ Keep it private — anyone with this link can edit your report. If you didn't su
     `<h1 style="font-size:20px;margin:0 0 12px">Manage your report</h1>
      <p>Thanks for submitting your report about <strong>${escapeHtml(sellerName)}</strong>. A moderator will review it within 48 hours.</p>
      <p>Use this private link to update or delete your report at any time:</p>
-     <p style="margin:22px 0"><a href="${manageUrl}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block">Manage your report</a></p>
+     <p style="margin:22px 0"><a href="${manageUrl}" style="background:#c0322a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block">Manage your report</a></p>
      <p style="font-size:13px;color:#666">Keep this link private — anyone who has it can edit your report.</p>`,
   );
   await sendEmail({ to, subject, html, text });
@@ -87,7 +87,7 @@ export async function sendReportStatusEmail(opts: {
     approved
       ? `<h1 style="font-size:20px;margin:0 0 12px">It's live</h1>
          <p>Your report about <strong>${escapeHtml(sellerName)}</strong> passed review and is now public.</p>
-         <p style="margin:22px 0"><a href="${url}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block">View your report</a></p>`
+         <p style="margin:22px 0"><a href="${url}" style="background:#c0322a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block">View your report</a></p>`
       : `<h1 style="font-size:20px;margin:0 0 12px">Update on your report</h1>
          <p>After review, we weren't able to publish your report about <strong>${escapeHtml(sellerName)}</strong>. This usually means we couldn't verify enough of the details.</p>
          <p>You're welcome to submit again with more specifics.</p>`,

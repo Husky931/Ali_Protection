@@ -1,6 +1,6 @@
 import React from 'react';
+import { HeroImage } from '@/components/HeroImage';
 import { Icon } from '@/components/Navbar';
-import { HeroMock } from '@/components/HeroMock';
 import { SearchBox, ReportRow } from '@/components/SearchBox';
 import Link from 'next/link';
 import { db } from '@/lib/db';
@@ -22,7 +22,7 @@ export default async function LandingPage() {
     <div className="page">
       <Hero totalCount={totalReportsCount} />
       <WhySection />
-      <HowItWorks />
+      {/* <HowItWorks /> */}
       <FeedPreview reports={recentReports as Report[]} />
       <CTAStrip />
     </div>
@@ -31,17 +31,17 @@ export default async function LandingPage() {
 
 function Hero({ totalCount }: { totalCount: number }) {
   return (
-    <section style={{
-      paddingTop: 70, paddingBottom: 100,
-      background: 'radial-gradient(1200px 600px at 110% -10%, oklch(0.94 0.07 65 / .8), transparent 60%), radial-gradient(900px 500px at -10% 40%, oklch(0.96 0.04 75 / .7), transparent 60%)',
+    <section id="hero" style={{
+      paddingTop: 0, paddingBottom: 0,
+      background: 'radial-gradient(1200px 600px at 110% -10%, oklch(0.93 0.06 27 / .8), transparent 60%), radial-gradient(900px 500px at -10% 40%, oklch(0.95 0.035 27 / .7), transparent 60%)',
       borderBottom: '1px solid var(--line)',
       position: 'relative', overflow: 'hidden',
     }}>
       <div className="container" style={{
-        display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 60,
-        alignItems: 'center',
+        display: 'grid',
+        alignItems: 'stretch',
       }}>
-        <div>
+        <div className="hero-copy" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
             <span className="chip chip-orange">
               <span style={{ width: 6, height: 6, borderRadius: 99, background: 'var(--accent)' }} />
@@ -68,8 +68,14 @@ function Hero({ totalCount }: { totalCount: number }) {
             </Link>
           </div>
         </div>
-        <div style={{ position: 'relative', minHeight: 420 }}>
-          <HeroMock />
+        <div className="hero-media" style={{ position: 'relative', alignSelf: 'stretch', display: 'flex' }}>
+          <HeroImage
+            src="/hero-alibaba.png"
+            alt="A real Alibaba supplier profile — a 4.8-star rating and glowing reviews circled — the kind of listing that buries buyer complaints."
+            width={1250}
+            height={1464}
+            sizes="(max-width: 1220px) 100vw, 640px"
+          />
         </div>
       </div>
     </section>
@@ -87,11 +93,10 @@ function TrustItem({ icon, text }: { icon: string; text: string }) {
 function WhySection() {
   return (
     <section id="why" style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: 64, alignItems: 'flex-start' }}>
+      <div className="container" style={{ display: 'grid' }}>
         <div>
-          <span className="eyebrow">Why this site exists</span>
-          <h2 style={{ fontSize: 32, marginTop: 12, letterSpacing: '-.025em', lineHeight: 1.15, textWrap: 'balance' }}>
-            I got scammed on Alibaba. Here&rsquo;s what happened, and why I built this.
+          <h2 style={{ marginTop: 12, letterSpacing: '-.025em', lineHeight: 1.15, textWrap: 'balance', textAlign: 'center' }}>
+            I got scammed on Alibaba.
           </h2>
         </div>
         <div style={{ fontFamily: 'var(--serif)', fontSize: 19, lineHeight: 1.65, color: 'var(--ink-2)', maxWidth: 580 }}>

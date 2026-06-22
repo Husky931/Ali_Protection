@@ -9,7 +9,7 @@ export function HeroMock() {
         position: 'relative',
         padding: 22,
         transform: 'rotate(-1.2deg)',
-        background: '#fffdf8',
+        background: 'var(--card)',
       }}>
         {/* Faux browser chrome */}
         <div style={{
@@ -17,9 +17,9 @@ export function HeroMock() {
           paddingBottom: 10, borderBottom: '1px solid var(--line)',
           marginBottom: 14,
         }}>
-          <span style={dot('#e5564b')} />
-          <span style={dot('#e5b13f')} />
-          <span style={dot('#5fbb5f')} />
+          <span style={dot('oklch(0.55 0.20 27)')} />
+          <span style={dot('oklch(0.68 0.15 27)')} />
+          <span style={dot('oklch(0.80 0.10 27)')} />
           <div style={{
             marginLeft: 10, flex: 1,
             background: 'var(--bg-2)', borderRadius: 6,
@@ -34,7 +34,7 @@ export function HeroMock() {
         <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: 14, alignItems: 'flex-start' }}>
           <div style={{
             width: 88, height: 88, borderRadius: 12,
-            background: 'repeating-linear-gradient(135deg, #e8e2d3, #e8e2d3 6px, #ddd5c2 6px, #ddd5c2 12px)',
+            background: 'repeating-linear-gradient(135deg, oklch(0.91 0.02 27), oklch(0.91 0.02 27) 6px, oklch(0.87 0.03 27) 6px, oklch(0.87 0.03 27) 12px)',
             border: '1px solid var(--line-2)',
             display: 'grid', placeItems: 'center',
             fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)',
@@ -46,14 +46,14 @@ export function HeroMock() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <h3 style={{ fontSize: 18, letterSpacing: '-.01em' }}>Shenzhen GlowTech Electronics Co., Ltd.</h3>
               <span style={{
-                background: 'oklch(0.92 0.10 90)',
-                color: 'oklch(0.42 0.12 70)',
+                background: 'oklch(0.93 0.05 27)',
+                color: 'oklch(0.45 0.16 27)',
                 padding: '2px 8px', borderRadius: 4,
                 fontSize: 10, fontWeight: 700, letterSpacing: '.06em',
               }}>VERIFIED · 3 YRS</span>
             </div>
             <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>
-              <span><span style={{ color: '#d4a017', fontSize: 13 }}>★★★★★</span> 4.9 / 5.0</span>
+              <span><span style={{ color: 'var(--accent)', fontSize: 13 }}>★★★★★</span> 4.9 / 5.0</span>
               <span>· 1,284 transactions</span>
               <span>· On-time: 98%</span>
             </div>
@@ -116,7 +116,7 @@ function ReviewRow({ stars, text, visible, hidden }: { stars: number; text: stri
     }}>
       <span style={{
         fontSize: 12,
-        color: visible ? '#d4a017' : 'transparent',
+        color: visible ? 'var(--accent)' : 'transparent',
         letterSpacing: 1,
         position: 'relative',
         filter: hidden ? 'blur(4px)' : 'none',
@@ -135,9 +135,9 @@ function ReviewRow({ stars, text, visible, hidden }: { stars: number; text: stri
         {hidden && (
           <span style={{
             position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-            fontSize: 9, fontFamily: 'var(--mono)', color: 'oklch(0.45 0.18 28)',
+            fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent-ink)',
             background: '#fff', padding: '1px 5px', borderRadius: 3,
-            border: '1px solid oklch(0.85 0.10 30)',
+            border: '1px solid oklch(0.85 0.08 27)',
             letterSpacing: '.05em',
           }}>HIDDEN</span>
         )}
@@ -166,8 +166,8 @@ function Annotation({ text, style, flipped }: { text: string; style: React.CSSPr
         bottom: -28,
         transform: flipped ? 'scaleX(-1) rotate(8deg)' : 'rotate(-8deg)',
       }}>
-        <path d="M2 4 C 20 8, 35 18, 55 30" stroke="oklch(0.55 0.18 45)" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeDasharray="0" />
-        <path d="M50 24 L 55 30 L 47 32" stroke="oklch(0.55 0.18 45)" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M2 4 C 20 8, 35 18, 55 30" stroke="oklch(0.50 0.18 27)" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeDasharray="0" />
+        <path d="M50 24 L 55 30 L 47 32" stroke="oklch(0.50 0.18 27)" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
   );

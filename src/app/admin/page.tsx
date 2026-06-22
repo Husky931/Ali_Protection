@@ -167,7 +167,7 @@ export default function AdminPage() {
                 color: "var(--accent-ink)",
                 display: "grid",
                 placeItems: "center",
-                border: "2px solid oklch(0.84 0.10 60)",
+                border: "2px solid oklch(0.85 0.08 27)",
               }}
             >
               <Icon name="check" size={26} />
@@ -322,9 +322,9 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => updateReport(report.id, "approved")}
                     style={{
-                      background: "oklch(0.62 0.16 150)",
+                      background: "var(--ink)",
                       color: "#fff",
-                      borderColor: "oklch(0.55 0.15 150)",
+                      borderColor: "var(--ink)",
                       boxShadow: "var(--shadow-sm)",
                     }}
                   >

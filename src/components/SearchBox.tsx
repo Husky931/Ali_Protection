@@ -58,7 +58,7 @@ export function ReportRow({ report }: { report: Report }) {
           <span className="chip">{r.industry}</span>
           <span className="chip chip-mono">{r.platform}</span>
           {r.purchase_verified && (
-            <span className="chip" style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.84 0.10 60)' }}>
+            <span className="chip" style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.85 0.08 27)' }}>
               <Icon name="check" size={11} /> Verified
             </span>
           )}
