@@ -162,10 +162,10 @@ export function ReportForm() {
   };
 
   const steps = [
-    { num: '01', label: 'Seller' },
-    { num: '02', label: 'Order' },
-    { num: '03', label: 'Story' },
-    { num: '04', label: 'Review' },
+    { label: 'Seller' },
+    { label: 'Order' },
+    { label: 'Story' },
+    { label: 'Review' },
   ];
 
   const stepValid = [
@@ -358,12 +358,14 @@ export function ReportForm() {
                   cursor: locked ? 'not-allowed' : 'pointer',
                   textAlign: 'left',
                 }}>
-                <span style={{
-                  fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '.06em',
-                  color: active ? 'var(--accent)' : (done ? 'var(--accent-ink)' : 'var(--muted-2)'),
-                }}>
-                  {done ? '✓ DONE' : s.num}
-                </span>
+                {done && (
+                  <span style={{
+                    fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '.06em',
+                    color: 'var(--accent-ink)',
+                  }}>
+                    ✓ DONE
+                  </span>
+                )}
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{s.label}</span>
               </button>
             </div>
