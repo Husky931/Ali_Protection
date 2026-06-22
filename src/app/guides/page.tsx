@@ -35,7 +35,7 @@ export default function GuidesIndexPage() {
                 key={g.slug}
                 href={`/guides/${g.slug}`}
                 className="paper"
-                style={{ display: "block", padding: 22, borderRadius: 16, textDecoration: "none" }}
+                style={{ display: "block", padding: 22, borderRadius: 8, textDecoration: "none" }}
               >
                 <span className="eyebrow">{g.eyebrow}</span>
                 <h2 style={{ fontSize: 21, letterSpacing: "-.02em", marginTop: 6, color: "var(--ink)" }}>{g.title}</h2>

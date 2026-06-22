@@ -49,7 +49,7 @@ export default function NotFound() {
             <Link href="/reports" className="btn btn-accent">
               Browse all reports
             </Link>
-            <Link href="/" className="btn">
+            <Link href="/" className="btn btn-ghost">
               Go to homepage
             </Link>
           </div>

@@ -167,7 +167,7 @@ export default function AdminPage() {
                 color: "var(--accent-ink)",
                 display: "grid",
                 placeItems: "center",
-                border: "2px solid oklch(0.85 0.08 27)",
+                border: "2px solid oklch(0.45 0.12 27)",
               }}
             >
               <Icon name="check" size={26} />
@@ -216,7 +216,7 @@ export default function AdminPage() {
                     {report.possible_duplicates.length > 0 ? (
                       <span
                         className="chip"
-                        style={{ color: "var(--danger)", borderColor: "oklch(0.82 0.09 27)" }}
+                        style={{ color: "var(--danger)", borderColor: "oklch(0.55 0.15 27)" }}
                         title={report.possible_duplicates.map((d) => `${d.seller_name} (${d.status})`).join(", ")}
                       >
                         ⚠ {report.possible_duplicates.length} possible duplicate
@@ -258,7 +258,7 @@ export default function AdminPage() {
                               width: 110,
                               height: 110,
                               objectFit: "cover",
-                              borderRadius: 10,
+                              borderRadius: 8,
                               border: "1px solid var(--line-2)",
                               display: "block",
                             }}
@@ -282,7 +282,7 @@ export default function AdminPage() {
                             src={image.url}
                             alt={`Order receipt ${i + 1}`}
                             loading="lazy"
-                            style={{ width: 110, height: 110, objectFit: "cover", borderRadius: 10, border: "1px solid var(--line-2)", display: "block" }}
+                            style={{ width: 110, height: 110, objectFit: "cover", borderRadius: 8, border: "1px solid var(--line-2)", display: "block" }}
                           />
                         </a>
                       ))}
@@ -323,7 +323,7 @@ export default function AdminPage() {
                     onClick={() => updateReport(report.id, "approved")}
                     style={{
                       background: "var(--ink)",
-                      color: "#fff",
+                      color: "var(--bg)",
                       borderColor: "var(--ink)",
                       boxShadow: "var(--shadow-sm)",
                     }}
@@ -334,7 +334,7 @@ export default function AdminPage() {
                     className="btn btn-ghost"
                     type="button"
                     onClick={() => updateReport(report.id, "rejected")}
-                    style={{ color: "var(--danger)", borderColor: "oklch(0.82 0.09 27)" }}
+                    style={{ color: "var(--danger)", borderColor: "oklch(0.55 0.15 27)" }}
                   >
                     <Icon name="x" size={14} /> Reject
                   </button>

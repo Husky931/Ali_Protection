@@ -94,7 +94,6 @@ function FooterCol({ title, links }: { title: string; links: { label: string; hr
 export function FloatingReportButton() {
   return (
     <Link className="float-cta" href="/submit-report">
-      <span className="float-cta-dot" />
       Report a seller
     </Link>
   );

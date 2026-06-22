@@ -89,7 +89,7 @@ export default async function BrowsePage({
                 style={{
                   textDecoration: 'none',
                   background: (industry || 'All') === i ? 'var(--ink)' : 'var(--bg-2)',
-                  color: (industry || 'All') === i ? '#fff' : 'var(--ink-2)',
+                  color: (industry || 'All') === i ? 'var(--bg)' : 'var(--ink-2)',
                   borderColor: (industry || 'All') === i ? 'var(--ink)' : 'var(--line-2)',
                 }}>
                 {i}
@@ -110,7 +110,7 @@ export default async function BrowsePage({
             {(industry && industry !== 'All') ? <> in <strong style={{ color: 'var(--ink)' }}>{industry}</strong></> : null}
           </div>
           {filteredReports.length === 0 ? (
-            <div style={{ padding: '60px 20px', textAlign: 'center', background: 'var(--card)', border: '1px dashed var(--line-2)', borderRadius: 16 }}>
+            <div style={{ padding: '60px 20px', textAlign: 'center', background: 'var(--card)', border: '1px dashed var(--line-2)', borderRadius: 8 }}>
               <p style={{ fontSize: 16, color: 'var(--ink-2)' }}>No reports match this search.</p>
               <p className="muted small" style={{ marginTop: 6 }}>That&rsquo;s good news for you. Submit one if you have one to share.</p>
               <Link href="/submit-report" className="btn btn-accent" style={{ marginTop: 16 }}>Share Your Story</Link>

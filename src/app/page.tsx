@@ -33,7 +33,7 @@ function Hero({ totalCount }: { totalCount: number }) {
   return (
     <section id="hero" style={{
       paddingTop: 0, paddingBottom: 0,
-      background: 'radial-gradient(1200px 600px at 110% -10%, oklch(0.93 0.06 27 / .8), transparent 60%), radial-gradient(900px 500px at -10% 40%, oklch(0.95 0.035 27 / .7), transparent 60%)',
+      background: 'radial-gradient(1200px 600px at 110% -10%, oklch(0.40 0.12 27 / .35), transparent 60%), radial-gradient(900px 500px at -10% 40%, oklch(0.30 0.09 27 / .30), transparent 60%)',
       borderBottom: '1px solid var(--line)',
       position: 'relative', overflow: 'hidden',
     }}>
@@ -57,7 +57,7 @@ function Hero({ totalCount }: { totalCount: number }) {
             fontSize: 19, color: 'var(--ink-2)',
             marginTop: 22, maxWidth: 520, lineHeight: 1.5,
           }}>
-            Share your story. Protect others from fraudulent sellers.  Bad sellers should not get repeated business.
+            The image on the right tells the whole story. Real Alibaba seller screenshot who has multiple 1 star reviews which are not shown in the overall view.
           </p>
           <div style={{ display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
             <Link href="/submit-report" className="btn btn-accent">
@@ -146,7 +146,7 @@ function HowItWorks() {
             <div key={s.num} style={{
               background: 'var(--card)',
               border: '1px solid var(--line)',
-              borderRadius: 18,
+              borderRadius: 8,
               padding: 26,
               boxShadow: 'var(--shadow-sm)',
               position: 'relative',
@@ -158,7 +158,7 @@ function HowItWorks() {
                   lineHeight: 1,
                 }}>{s.num}</span>
                 <span style={{
-                  width: 36, height: 36, borderRadius: 10,
+                  width: 36, height: 36, borderRadius: 8,
                   background: 'var(--bg)', border: '1px solid var(--line)',
                   display: 'grid', placeItems: 'center',
                   color: 'var(--ink-2)',
@@ -207,7 +207,7 @@ function FeedPreview({ reports }: { reports: Report[] }) {
 
 function CTAStrip() {
   return (
-    <section style={{ padding: '90px 0', background: 'var(--ink)', color: '#fff' }}>
+    <section style={{ padding: '90px 0', background: 'linear-gradient(135deg, oklch(0.34 0.11 27), oklch(0.21 0.06 27))', color: '#fff' }}>
       <div className="container" style={{ textAlign: 'center', maxWidth: 700 }}>
         <h2 style={{ fontSize: 'clamp(32px, 4.5vw, 48px)', marginTop: 14, letterSpacing: '-.03em', lineHeight: 1.1, textWrap: 'balance' }}>
           Your story can save the next buyer thousands.

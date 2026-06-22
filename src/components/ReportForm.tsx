@@ -338,7 +338,7 @@ export function ReportForm() {
       {/* Stepper */}
       <div style={{
         display: 'flex', gap: 0, alignItems: 'stretch', marginTop: 30, marginBottom: 30,
-        background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: 6,
+        background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 8, padding: 6,
       }}>
         {steps.map((s, i) => {
           const done = i < step;
@@ -353,8 +353,8 @@ export function ReportForm() {
                   width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                   gap: 2, padding: '10px 14px',
                   background: active ? 'var(--ink)' : 'transparent',
-                  color: active ? '#fff' : (done ? 'var(--ink)' : 'var(--muted)'),
-                  border: 'none', borderRadius: 10,
+                  color: active ? 'var(--bg)' : (done ? 'var(--ink)' : 'var(--muted)'),
+                  border: 'none', borderRadius: 8,
                   cursor: locked ? 'not-allowed' : 'pointer',
                   textAlign: 'left',
                 }}>
@@ -560,11 +560,11 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
             <div key={image.id} style={{ position: 'relative', width: 96, height: 96 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={image.previewUrl} alt={`Photo ${i + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line-2)', display: 'block' }} />
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line-2)', display: 'block' }} />
               <button type="button" onClick={() => onRemoveImage(image.id)} aria-label={`Remove photo ${i + 1}`}
                 style={{
                   position: 'absolute', top: -8, right: -8, width: 24, height: 24,
-                  borderRadius: 999, background: 'var(--ink)', color: '#fff', border: '2px solid var(--card)',
+                  borderRadius: 999, background: 'var(--ink)', color: 'var(--bg)', border: '2px solid var(--card)',
                   display: 'grid', placeItems: 'center', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0,
                 }}>
                 ×
@@ -579,7 +579,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
           ))}
           {room > 0 && (
             <label style={{
-              width: 96, height: 96, borderRadius: 10, border: '1px dashed var(--line-2)',
+              width: 96, height: 96, borderRadius: 8, border: '1px dashed var(--line-2)',
               background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', gap: 4, cursor: imageBusy ? 'wait' : 'pointer',
               color: 'var(--muted)', fontSize: 11, textAlign: 'center',
@@ -614,15 +614,15 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
             <div key={image.id} style={{ position: 'relative', width: 96, height: 96 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={image.previewUrl} alt={`Receipt ${i + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line-2)', display: 'block' }} />
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line-2)', display: 'block' }} />
               <button type="button" onClick={() => onRemoveReceipt(image.id)} aria-label={`Remove receipt ${i + 1}`}
-                style={{ position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: 999, background: 'var(--ink)', color: '#fff', border: '2px solid var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0 }}>
+                style={{ position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: 999, background: 'var(--ink)', color: 'var(--bg)', border: '2px solid var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0 }}>
                 ×
               </button>
             </div>
           ))}
           {receipts.length < MAX_RECEIPTS_PER_REPORT && (
-            <label style={{ width: 96, height: 96, borderRadius: 10, border: '1px dashed var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: receiptBusy ? 'wait' : 'pointer', color: 'var(--muted)', fontSize: 11, textAlign: 'center' }}>
+            <label style={{ width: 96, height: 96, borderRadius: 8, border: '1px dashed var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: receiptBusy ? 'wait' : 'pointer', color: 'var(--muted)', fontSize: 11, textAlign: 'center' }}>
               <input type="file" accept="image/*" multiple disabled={receiptBusy} style={{ display: 'none' }}
                 onChange={(e) => { onAddReceipts(e.target.files); e.target.value = ''; }} />
               <Icon name="lock" size={16} />
@@ -635,7 +635,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
         )}
       </div>
 
-      <div style={{ background: 'var(--bg-2)', border: '1px dashed var(--line-2)', borderRadius: 10, padding: 14, fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>
+      <div style={{ background: 'var(--bg-2)', border: '1px dashed var(--line-2)', borderRadius: 8, padding: 14, fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>
         <strong style={{ color: 'var(--ink-2)' }}>Tips:</strong> Include the timeline, the dispute outcome, and any responses from the seller. Don&rsquo;t include anything you don&rsquo;t want public in the photos or blur out certain parts.
       </div>
     </div>
@@ -748,7 +748,7 @@ function Submitted({
           width: 72, height: 72, borderRadius: 999, margin: '0 auto 24px',
           background: 'var(--accent-soft)', color: 'var(--accent-ink)',
           display: 'grid', placeItems: 'center',
-          border: '2px solid oklch(0.85 0.08 27)',
+          border: '2px solid oklch(0.45 0.12 27)',
         }}>
           <Icon name="check" size={32} />
         </div>

@@ -344,7 +344,7 @@ function ApprovedManager({
 
       {err && <div style={{ marginBottom: 12, fontSize: 13, color: "var(--danger)" }}>{err}</div>}
 
-      <button className="btn btn-ghost" onClick={takeDown} disabled={busy} style={{ color: "var(--danger)", borderColor: "oklch(0.82 0.09 27)" }}>
+      <button className="btn btn-ghost" onClick={takeDown} disabled={busy} style={{ color: "var(--danger)", borderColor: "oklch(0.55 0.15 27)" }}>
         Take this report down
       </button>
     </>

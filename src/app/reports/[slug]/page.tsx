@@ -151,7 +151,7 @@ export default async function ReportDetailPage({
               <span
                 className="chip"
                 title="The buyer provided an order receipt that a moderator reviewed."
-                style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.85 0.08 27)' }}
+                style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.45 0.12 27)' }}
               >
                 <Icon name="check" size={12} /> Purchase verified
               </span>
@@ -170,7 +170,7 @@ export default async function ReportDetailPage({
       <section style={{ paddingTop: 40, paddingBottom: 30 }}>
         <div className="container-narrow">
           {/* Order facts */}
-          <div className="paper" style={{ padding: 24, marginBottom: 32, borderRadius: 16 }}>
+          <div className="paper" style={{ padding: 24, marginBottom: 32, borderRadius: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--muted)', marginBottom: 14 }}>
               Order details
             </div>
@@ -222,7 +222,7 @@ export default async function ReportDetailPage({
                       src={url}
                       alt={`Evidence photo ${i + 1} of ${evidenceUrls.length} — ${r.product_name} order from ${r.seller_name}`}
                       loading="lazy"
-                      style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 12, border: '1px solid var(--line)', display: 'block', background: 'var(--bg-2)' }}
+                      style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)', display: 'block', background: 'var(--bg-2)' }}
                     />
                   </a>
                 ))}
@@ -233,7 +233,7 @@ export default async function ReportDetailPage({
             </div>
           )}
 
-          <div style={{ marginTop: 36, padding: 18, background: 'var(--bg-2)', border: '1px dashed var(--line-2)', borderRadius: 12, fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>
+          <div style={{ marginTop: 36, padding: 18, background: 'var(--bg-2)', border: '1px dashed var(--line-2)', borderRadius: 8, fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>
             <strong style={{ color: 'var(--ink-2)' }}>A note on this report.</strong> This is a buyer&rsquo;s account of their own experience. We reviewed it for spam, libel, and verifiable details before publishing — but we cannot confirm every claim. If you&rsquo;re the seller and believe this is inaccurate, <Link href="/contact" className="btn-link">submit a response</Link>.
           </div>
 
@@ -241,8 +241,8 @@ export default async function ReportDetailPage({
           <div style={{
             marginTop: 36, padding: 28,
             background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-2))',
-            border: '1px solid oklch(0.85 0.08 27)',
-            borderRadius: 18,
+            border: '1px solid oklch(0.45 0.12 27)',
+            borderRadius: 8,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 18, flexWrap: 'wrap',
           }}>
             <div style={{ maxWidth: 420 }}>

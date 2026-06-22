@@ -11,7 +11,7 @@ export function SearchBox({ defaultValue = '', placeholder = 'Search by seller, 
         display: 'flex', alignItems: 'center',
         background: 'var(--card)',
         border: '1px solid var(--line-2)',
-        borderRadius: 12,
+        borderRadius: 8,
         padding: '4px 4px 4px 14px',
         minWidth: 320,
         boxShadow: 'var(--shadow-sm)',
@@ -43,7 +43,7 @@ export function ReportRow({ report }: { report: Report }) {
       href={`/reports/${r.slug}`}
       style={{
         background: 'var(--card)', border: '1px solid var(--line)',
-        borderRadius: 16, padding: 22,
+        borderRadius: 8, padding: 22,
         boxShadow: 'var(--shadow-sm)',
         cursor: 'pointer',
         transition: 'transform .12s, box-shadow .15s, border-color .15s',
@@ -58,7 +58,7 @@ export function ReportRow({ report }: { report: Report }) {
           <span className="chip">{r.industry}</span>
           <span className="chip chip-mono">{r.platform}</span>
           {r.purchase_verified && (
-            <span className="chip" style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.85 0.08 27)' }}>
+            <span className="chip" style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderColor: 'oklch(0.45 0.12 27)' }}>
               <Icon name="check" size={11} /> Verified
             </span>
           )}
