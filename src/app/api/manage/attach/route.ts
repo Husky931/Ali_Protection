@@ -111,7 +111,8 @@ export async function POST(request: Request) {
       manageUrl,
       sellerName: updated[0].seller_name,
     });
-  } catch {
+  } catch (err) {
+    console.error("attach: manage-link email send failed", err);
     return NextResponse.json(
       { error: "We couldn't send the email. Please try again." },
       { status: 502 },

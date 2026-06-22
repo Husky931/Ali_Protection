@@ -2,8 +2,27 @@
 // the repo's fetch-based Telegram notifier). Until RESEND_API_KEY + EMAIL_FROM
 // are configured, emailConfigured() is false and callers degrade gracefully.
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM;
+// Trim whitespace and strip a single pair of matching wrapping quotes. Vercel's
+// env UI stores values literally, so a value copied from a dotenv file (where
+// quotes are syntax, not data) arrives as `'Name <a@b.com>'` — which Resend
+// rejects as an invalid `from`. Only a matched outer pair is removed, so a
+// legitimate `"Display Name" <a@b.com>` (ends in `>`, not a quote) is untouched.
+function cleanEnv(value: string | undefined): string | undefined {
+  if (!value) return value;
+  const trimmed = value.trim();
+  const first = trimmed[0];
+  if (
+    trimmed.length >= 2 &&
+    (first === '"' || first === "'") &&
+    trimmed[trimmed.length - 1] === first
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+const RESEND_API_KEY = cleanEnv(process.env.RESEND_API_KEY);
+const EMAIL_FROM = cleanEnv(process.env.EMAIL_FROM);
 
 export function emailConfigured(): boolean {
   return Boolean(RESEND_API_KEY && EMAIL_FROM);

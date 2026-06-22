@@ -162,24 +162,6 @@ export function ReportForm() {
     setReceiptError("");
   };
 
-  const resetAll = () => {
-    images.forEach((image) => URL.revokeObjectURL(image.previewUrl));
-    setImages([]);
-    setImageError("");
-    receipts.forEach((image) => URL.revokeObjectURL(image.previewUrl));
-    setReceipts([]);
-    setReceiptError("");
-    setForm(initialState);
-    setStep(0);
-    setStatus("idle");
-    setErrorMessage("");
-    setReportId(null);
-    setClaimSecret(null);
-    setTermsAccepted(false);
-    setTurnstileToken("");
-    setHoneypot("");
-  };
-
   const steps = [
     { label: 'Seller' },
     { label: 'Order' },
@@ -334,13 +316,7 @@ export function ReportForm() {
   };
 
   if (step === 4)
-    return (
-      <Submitted
-        reportId={reportId}
-        claimSecret={claimSecret}
-        onReset={resetAll}
-      />
-    );
+    return <Submitted reportId={reportId} claimSecret={claimSecret} />;
 
   return (
     <div className="container-narrow">
@@ -574,7 +550,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
 
       <div className="field">
         <label className="label">
-          Photos <span className="label-hint">required, up to {MAX_IMAGES_PER_REPORT} — chat screenshots, payment receipts, received products</span>
+          Photos <span className="label-hint">required, up to {MAX_IMAGES_PER_REPORT} — received products photos</span>
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {images.map((image: PreparedImage, i: number) => (
@@ -726,11 +702,9 @@ function StepReview({ form, images, jump }: any) {
 function Submitted({
   reportId,
   claimSecret,
-  onReset,
 }: {
   reportId: string | null;
   claimSecret: string | null;
-  onReset: () => void;
 }) {
   // Only offer email capture when we have the one-time handoff from submit.
   const canClaim = Boolean(reportId && claimSecret);
@@ -785,7 +759,7 @@ function Submitted({
           Got it. Thank you for sharing.
         </h1>
         <p style={{ fontSize: 18, color: 'var(--ink-2)', marginTop: 16, lineHeight: 1.55, fontFamily: 'var(--serif)' }}>
-          A human moderator will review your report within 48 hours. If everything checks out, it&rsquo;ll go live with its own URL — and the next buyer Googling that seller will find it.
+          A human moderator will review your report within 48 hours. If approved, it&rsquo;ll will appear live on the website so the other buyers might avoid that seller.
         </p>
 
         {canClaim && claimState !== "sent" && (
@@ -841,7 +815,6 @@ function Submitted({
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
           <a href="/reports" className="btn btn-primary">Browse other reports</a>
-          <button type="button" onClick={onReset} className="btn btn-ghost">Submit another report</button>
         </div>
       </div>
     </section>
