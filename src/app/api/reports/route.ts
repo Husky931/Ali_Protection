@@ -27,7 +27,11 @@ type ReportBody = ReportInsert & {
   turnstileToken?: string;
   terms_version?: string;
   receipts?: string[]; // private order-receipt staging keys
+  no_receipt_reason?: string; // short reason given when no receipt is attached
 };
+
+// Cap the no-receipt reason so a runaway paste can't bloat a row.
+const MAX_NO_RECEIPT_REASON = 280;
 
 type VerifiedImage = { key: string; contentType: string; sizeBytes: number };
 
@@ -206,6 +210,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: receipts.error }, { status: receipts.status });
   }
 
+  // The order receipt is optional, but a report with no receipt must carry a
+  // short reason — that note is the moderator's only basis to judge an
+  // unverified report. Enforced here too so a direct API caller can't bypass
+  // the form's gate. A receipt makes any supplied reason moot (stored as null).
+  const rawNoReceiptReason =
+    typeof body.no_receipt_reason === "string" ? body.no_receipt_reason.trim() : "";
+  const hasReceipts = receipts.images.length > 0;
+  if (!hasReceipts && rawNoReceiptReason.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Attach an order receipt, or add a short note explaining why you don't have one.",
+      },
+      { status: 400 },
+    );
+  }
+  const noReceiptReason = hasReceipts
+    ? null
+    : rawNoReceiptReason.slice(0, MAX_NO_RECEIPT_REASON);
+
   try {
     const slug = await generateUniqueSlug(
       `${body.seller_name}-${body.product_name}`
@@ -230,6 +254,7 @@ export async function POST(request: Request) {
         currency: body.currency.trim(),
         industry: body.industry.trim(),
         details: body.details.trim(),
+        no_receipt_reason: noReceiptReason,
         status: "pending",
         slug,
         claim_secret_hash: hashToken(claimSecret),

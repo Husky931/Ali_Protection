@@ -92,6 +92,9 @@ export type AdminReport = Report & {
   images: AdminReportImage[];
   // Private order receipts (admin-only); never shown on the public page.
   receipts: AdminReportImage[];
+  // Submitter's short "why no receipt" note (null if a receipt was attached).
+  // Admin-only — never part of the public `Report` projection.
+  no_receipt_reason: string | null;
   has_email: boolean;
   email_verified: boolean;
   possible_duplicates: AdminReportDuplicate[];

@@ -134,6 +134,7 @@ export async function GET(request: Request) {
         ...(safe as unknown as Report),
         images: imagesByReport.get(report.id) ?? [],
         receipts: receiptsByReport.get(report.id) ?? [],
+        no_receipt_reason: report.no_receipt_reason,
         has_email: Boolean(report.submitter_email),
         email_verified: report.email_verified,
         possible_duplicates: duplicatesByReport.get(report.id) ?? [],

@@ -60,6 +60,10 @@ export function ReportForm() {
   const [receipts, setReceipts] = useState<PreparedReceipt[]>([]);
   const [receiptError, setReceiptError] = useState("");
   const [receiptBusy, setReceiptBusy] = useState(false);
+  // "I don't have an order receipt" path: instead of a receipt the submitter
+  // gives a short reason, which the moderator weighs when deciding to publish.
+  const [noReceipt, setNoReceipt] = useState(false);
+  const [noReceiptReason, setNoReceiptReason] = useState("");
 
   const handleChange = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [k]: e.target.value });
@@ -162,6 +166,21 @@ export function ReportForm() {
     setReceiptError("");
   };
 
+  // A receipt and the "no receipt" reason are mutually exclusive: ticking the
+  // box drops any attached receipts; unticking clears the reason text.
+  const toggleNoReceipt = (checked: boolean) => {
+    setNoReceipt(checked);
+    if (checked) {
+      setReceipts((prev) => {
+        prev.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+        return [];
+      });
+      setReceiptError("");
+    } else {
+      setNoReceiptReason("");
+    }
+  };
+
   const steps = [
     { label: 'Seller' },
     { label: 'Order' },
@@ -172,7 +191,11 @@ export function ReportForm() {
   const stepValid = [
     form.seller_name.trim() && form.seller_url.trim(),
     form.product_name.trim() && form.quantity && form.total_price && form.industry,
-    form.details.trim().length > 60 && images.length > 0 && receipts.length > 0,
+    // Photos are optional. The receipt is optional too, but the submitter must
+    // either attach one or tick "no receipt" and say why (so the moderator
+    // always has a basis to judge an unverified report).
+    form.details.trim().length > 60 &&
+      (receipts.length > 0 || (noReceipt && noReceiptReason.trim().length >= 3)),
     true,
   ];
 
@@ -284,6 +307,7 @@ export function ReportForm() {
           total_price: Number(form.total_price),
           images: imageKeys,
           receipts: receiptKeys,
+          no_receipt_reason: noReceipt ? noReceiptReason.trim() : "",
           website: honeypot,
           turnstileToken,
           terms_version: TERMS_VERSION,
@@ -385,11 +409,15 @@ export function ReportForm() {
             receiptBusy={receiptBusy}
             onAddReceipts={addReceipts}
             onRemoveReceipt={removeReceipt}
+            noReceipt={noReceipt}
+            noReceiptReason={noReceiptReason}
+            onToggleNoReceipt={toggleNoReceipt}
+            onChangeReason={(e: React.ChangeEvent<HTMLInputElement>) => setNoReceiptReason(e.target.value)}
           />
         )}
         {step === 3 && (
           <>
-            <StepReview form={form} images={images} jump={setStep} />
+            <StepReview form={form} images={images} receipts={receipts} noReceipt={noReceipt} noReceiptReason={noReceiptReason} jump={setStep} />
 
             {/* Honeypot — pushed off-screen and hidden from assistive tech. Bots
                 that auto-fill inputs populate it; humans never see it, and a
@@ -531,7 +559,7 @@ function StepOrder({ form, handleChange }: any) {
   );
 }
 
-function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFiles, onRemoveImage, receipts, receiptError, receiptBusy, onAddReceipts, onRemoveReceipt }: any) {
+function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFiles, onRemoveImage, receipts, receiptError, receiptBusy, onAddReceipts, onRemoveReceipt, noReceipt, noReceiptReason, onToggleNoReceipt, onChangeReason }: any) {
   const len = form.details.length;
   const room = MAX_IMAGES_PER_REPORT - images.length;
   return (
@@ -550,7 +578,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
 
       <div className="field">
         <label className="label">
-          Photos <span className="label-hint">required, up to {MAX_IMAGES_PER_REPORT} — received products photos</span>
+          Photos <span className="label-hint">optional, up to {MAX_IMAGES_PER_REPORT} — photos of the products you received</span>
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {images.map((image: PreparedImage, i: number) => (
@@ -604,39 +632,73 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
 
       <div className="field">
         <label className="label">
-          Order receipt <span className="label-hint">required &amp; private — a screenshot or PDF of your platform order/receipt. Never shown publicly; only a moderator sees it to confirm you really purchased. Earns a &ldquo;Purchase verified&rdquo; badge.</span>
+          Order receipt <span className="label-hint">optional &amp; private — a screenshot or PDF of your platform order/receipt. Never shown publicly; only a moderator sees it to confirm you really purchased. Earns a &ldquo;Purchase verified&rdquo; badge.</span>
         </label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          {receipts.map((image: PreparedReceipt, i: number) => (
-            <div key={image.id} style={{ position: 'relative', width: 96, height: 96 }}>
-              {image.isPdf ? (
-                <div title={image.fileName}
-                  style={{ width: '100%', height: '100%', borderRadius: 8, border: '1px solid var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--ink-2)', padding: 6, textAlign: 'center' }}>
-                  <Icon name="file-text" size={22} />
-                  <span style={{ fontSize: 10, fontWeight: 600 }}>PDF</span>
+        {!noReceipt && (
+          <>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {receipts.map((image: PreparedReceipt, i: number) => (
+                <div key={image.id} style={{ position: 'relative', width: 96, height: 96 }}>
+                  {image.isPdf ? (
+                    <div title={image.fileName}
+                      style={{ width: '100%', height: '100%', borderRadius: 8, border: '1px solid var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--ink-2)', padding: 6, textAlign: 'center' }}>
+                      <Icon name="file-text" size={22} />
+                      <span style={{ fontSize: 10, fontWeight: 600 }}>PDF</span>
+                    </div>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={image.previewUrl} alt={`Receipt ${i + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line-2)', display: 'block' }} />
+                  )}
+                  <button type="button" onClick={() => onRemoveReceipt(image.id)} aria-label={`Remove receipt ${i + 1}`}
+                    style={{ position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: 999, background: 'var(--ink)', color: 'var(--bg)', border: '2px solid var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0 }}>
+                    ×
+                  </button>
                 </div>
-              ) : (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={image.previewUrl} alt={`Receipt ${i + 1}`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line-2)', display: 'block' }} />
+              ))}
+              {receipts.length < MAX_RECEIPTS_PER_REPORT && (
+                <label style={{ width: 96, height: 96, borderRadius: 8, border: '1px dashed var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: receiptBusy ? 'wait' : 'pointer', color: 'var(--muted)', fontSize: 11, textAlign: 'center' }}>
+                  <input type="file" accept="image/*,application/pdf" multiple disabled={receiptBusy} style={{ display: 'none' }}
+                    onChange={(e) => { onAddReceipts(e.target.files); e.target.value = ''; }} />
+                  {receiptBusy ? <TileSpinner /> : <Icon name="lock" size={16} />}
+                  {receiptBusy ? 'Processing…' : 'Add receipt'}
+                </label>
               )}
-              <button type="button" onClick={() => onRemoveReceipt(image.id)} aria-label={`Remove receipt ${i + 1}`}
-                style={{ position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: 999, background: 'var(--ink)', color: 'var(--bg)', border: '2px solid var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0 }}>
-                ×
-              </button>
             </div>
-          ))}
-          {receipts.length < MAX_RECEIPTS_PER_REPORT && (
-            <label style={{ width: 96, height: 96, borderRadius: 8, border: '1px dashed var(--line-2)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: receiptBusy ? 'wait' : 'pointer', color: 'var(--muted)', fontSize: 11, textAlign: 'center' }}>
-              <input type="file" accept="image/*,application/pdf" multiple disabled={receiptBusy} style={{ display: 'none' }}
-                onChange={(e) => { onAddReceipts(e.target.files); e.target.value = ''; }} />
-              {receiptBusy ? <TileSpinner /> : <Icon name="lock" size={16} />}
-              {receiptBusy ? 'Processing…' : 'Add receipt'}
+            {receiptError && (
+              <div style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{receiptError}</div>
+            )}
+          </>
+        )}
+
+        {/* No-receipt path: a short reason the moderator weighs instead. */}
+        <label style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 14, fontSize: 14, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={noReceipt}
+            onChange={(e) => onToggleNoReceipt(e.target.checked)}
+            style={{ width: 16, height: 16, flexShrink: 0 }}
+          />
+          <span className="muted">I don&rsquo;t have an order receipt</span>
+        </label>
+
+        {noReceipt && (
+          <div style={{ marginTop: 12 }}>
+            <label className="label">
+              Why not? <span className="label-hint">a few words — the moderator reads this to decide whether to publish</span>
             </label>
-          )}
-        </div>
-        {receiptError && (
-          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{receiptError}</div>
+            <input
+              className="input"
+              value={noReceiptReason}
+              onChange={onChangeReason}
+              maxLength={200}
+              placeholder="e.g. paid by bank transfer, lost the invoice, deal was off-platform"
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+              <span className="muted small">{noReceiptReason.trim().length < 3 ? 'Add a short reason' : 'looks good'}</span>
+              <span className="muted small">{noReceiptReason.length}/200</span>
+            </div>
+          </div>
         )}
       </div>
 
@@ -647,7 +709,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
   );
 }
 
-function StepReview({ form, images, jump }: any) {
+function StepReview({ form, images, receipts, noReceipt, noReceiptReason, jump }: any) {
   const Field = ({ label, value, onEdit }: any) => (
     <div style={{ padding: '12px 0', borderBottom: '1px dashed var(--line)', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
       <div>
@@ -694,6 +756,17 @@ function StepReview({ form, images, jump }: any) {
           </div>
           <button className="btn-link small" onClick={() => jump(2)}>Edit</button>
         </div>
+        <Field
+          label="Order receipt"
+          value={
+            receipts.length > 0
+              ? `${receipts.length} file${receipts.length > 1 ? 's' : ''} attached (private)`
+              : noReceipt
+                ? `Not provided — “${noReceiptReason.trim()}”`
+                : 'Not provided'
+          }
+          onEdit={() => jump(2)}
+        />
       </div>
     </div>
   );

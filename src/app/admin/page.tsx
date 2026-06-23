@@ -302,7 +302,21 @@ export default function AdminPage() {
                       )}
                     </div>
                   </div>
-                ) : null}
+                ) : (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em", fontWeight: 600, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon name="lock" size={12} /> Order receipt — none attached
+                    </div>
+                    {report.no_receipt_reason ? (
+                      <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink-2)", background: "var(--bg-2)", border: "1px dashed oklch(0.55 0.15 27)", borderRadius: 8, padding: "10px 12px" }}>
+                        <span style={{ color: "var(--danger)", fontWeight: 600 }}>No receipt — submitter&rsquo;s reason:</span>{" "}
+                        &ldquo;{report.no_receipt_reason}&rdquo;
+                      </div>
+                    ) : (
+                      <div className="muted small">No order receipt was provided.</div>
+                    )}
+                  </div>
+                )}
 
                 <div className="row" style={{ gap: 18, marginTop: 16, flexWrap: "wrap" }}>
                   {report.seller_url ? (

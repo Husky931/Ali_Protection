@@ -55,6 +55,13 @@ export const reports = pgTable(
     // "Purchase verified" badge. The receipt image itself is never public.
     purchase_verified: boolean("purchase_verified").default(false).notNull(),
 
+    // Short submitter-supplied explanation for why no order receipt was
+    // attached (e.g. "paid by bank transfer", "lost the invoice"). Null when a
+    // receipt was uploaded. Private/admin-only — surfaced to the moderator to
+    // weigh an unverified report; deliberately kept OUT of the public column
+    // projection (see reportSelect.ts) so it never reaches the browser.
+    no_receipt_reason: text("no_receipt_reason"),
+
     // Truthfulness/terms acceptance captured at submit time (legal posture).
     terms_version: text("terms_version"),
     terms_accepted_at: timestamp("terms_accepted_at", { withTimezone: true }),

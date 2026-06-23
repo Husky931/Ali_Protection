@@ -1,0 +1,1 @@
+ALTER TABLE "reports" ADD COLUMN "no_receipt_reason" text;
