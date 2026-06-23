@@ -195,7 +195,7 @@ export function ReportForm() {
     // either attach one or tick "no receipt" and say why (so the moderator
     // always has a basis to judge an unverified report).
     form.details.trim().length > 60 &&
-      (receipts.length > 0 || (noReceipt && noReceiptReason.trim().length >= 3)),
+    (receipts.length > 0 || (noReceipt && noReceiptReason.trim().length >= 3)),
     true,
   ];
 
@@ -695,7 +695,7 @@ function StepStory({ form, handleChange, images, imageError, imageBusy, onAddFil
               placeholder="e.g. paid by bank transfer, lost the invoice, deal was off-platform"
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span className="muted small">{noReceiptReason.trim().length < 3 ? 'Add a short reason' : 'looks good'}</span>
+              <span className="muted small">Add a short reason</span>
               <span className="muted small">{noReceiptReason.length}/200</span>
             </div>
           </div>
