@@ -108,12 +108,15 @@ function WhySection() {
             I got scammed on Alibaba.
           </h2>
         </div>
-        <div style={{ fontFamily: 'var(--serif)', fontSize: 19, lineHeight: 1.65, color: 'var(--ink-2)', maxWidth: 580 }}>
-          <p style={{ marginTop: 0 }}>In 2024 I wired $4,200 to a verified Gold Supplier for a thousand LED bulbs. The samples were perfect. The bulk shipment never came. Tracking went dead the day after I paid the balance.</p>
-          <p>Trade Assurance asked for documents I&rsquo;d already submitted twice, then closed the dispute because I &ldquo;missed a 72-hour response window.&rdquo; The seller&rsquo;s 4.9-star rating never moved. New buyers had no way of knowing.</p>
-          <p>I asked around. Everyone I talked to had a story like this — or knew someone who did. The marketplace has every incentive to make those stories invisible. Buyers have nowhere to put them.</p>
-          <p style={{ marginBottom: 0 }}>So this is the wall. If you got burned, post it. Help the next person Google before they wire.</p>
-          <p style={{ marginTop: 18, fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--muted)', fontStyle: 'normal' }}>— J., the buyer who started this</p>
+        <div data-nosnippet style={{ fontFamily: 'var(--serif)', fontSize: 19, lineHeight: 1.65, color: 'var(--ink-2)', maxWidth: 580 }}>
+          <p style={{ marginTop: 0 }}>The Trade Assurance is a scam and the Dispute Resolution Process is biased. I&rsquo;ve had a dispute going for months over counterfeit 18kt gold, counterfeit platinum, fake Moissanite, and fraudulent copies of GRA certificates. It&rsquo;s cost me nearly $10,000 in products, testing equipment, independent valuations, and import tax.</p>
+          <p style={{ marginBottom: 0 }}>The jewellery delivered was nothing more than cheap costume jewellery. Despite the overwhelming evidence I provided — the days and nights I sat photographing every test on every piece — the metal was made of god knows what, the Moissanite nothing but well-cut glass, all of it stamped AU750 or PL950 so it would pass as the real thing&hellip;</p>
+          <p style={{ marginTop: 22 }}>
+            <Link href="/reports/quanzhou-pushi-jewellery-18k-gold-platinum-moissanite-jewelry" style={{ fontFamily: 'var(--sans)', fontSize: 15, fontWeight: 600, color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              Read the full report on Quanzhou Pushi Jewellery <Icon name="arrow-right" size={14} />
+            </Link>
+          </p>
+          <p style={{ marginTop: 12, marginBottom: 0, fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--muted)', fontStyle: 'normal' }}>— A buyer&rsquo;s report, published on alibabascammer.com</p>
         </div>
       </div>
     </section>
