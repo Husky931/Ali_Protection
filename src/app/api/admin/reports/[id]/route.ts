@@ -9,10 +9,142 @@ import {
   deleteObjects,
   isMissingObjectError,
   r2Configured,
+  headObject,
 } from "@/lib/r2";
 import { isAuthorized } from "@/lib/adminAuth";
 import { emailConfigured, sendReportStatusEmail } from "@/lib/email";
 import { absoluteUrl } from "@/lib/site";
+// === TEMP-SEED-EDIT: imports for in-admin field/photo editing (remove with feature) ===
+import {
+  PENDING_KEY_PATTERN,
+  MAX_IMAGES_PER_REPORT,
+  MAX_IMAGE_BYTES,
+  isAllowedImageType,
+} from "@/lib/images";
+import { validateReportFields } from "@/lib/validateReport";
+import { ReportInsert } from "@/lib/reportTypes";
+
+type AdminEditPayload = {
+  fields?: Partial<ReportInsert>;
+  add_images?: string[];
+  remove_image_ids?: string[];
+};
+
+// Edit a pending report's fields and/or evidence photos before approval. The
+// editor UI always sends the full field set, so we validate it exactly like a
+// fresh submission. New photos arrive as verified pending/ R2 keys (same flow
+// as the public form); on approval they get copied to the public prefix.
+async function handleAdminEdit(
+  id: string,
+  edit: AdminEditPayload,
+): Promise<NextResponse> {
+  try {
+    const [rep] = await db
+      .select({ id: reports.id })
+      .from(reports)
+      .where(eq(reports.id, id))
+      .limit(1);
+    if (!rep) {
+      return NextResponse.json({ error: "Report not found." }, { status: 404 });
+    }
+
+    if (edit.fields) {
+      const v = validateReportFields(edit.fields);
+      if (!v.ok) {
+        return NextResponse.json({ error: v.errors.join(" ") }, { status: 400 });
+      }
+      const f = edit.fields;
+      await db
+        .update(reports)
+        .set({
+          seller_name: (f.seller_name ?? "").trim(),
+          seller_url: (f.seller_url ?? "").trim(),
+          platform: (f.platform ?? "Alibaba.com").trim() || "Alibaba.com",
+          product_name: (f.product_name ?? "").trim(),
+          product_url:
+            typeof f.product_url === "string" ? f.product_url.trim() : "",
+          quantity: String(v.values.quantity),
+          total_price: String(v.values.totalPrice),
+          currency: (f.currency ?? "").trim(),
+          industry: (f.industry ?? "").trim(),
+          details: (f.details ?? "").trim(),
+          updated_at: new Date(),
+        })
+        .where(eq(reports.id, id));
+    }
+
+    if (Array.isArray(edit.remove_image_ids) && edit.remove_image_ids.length > 0) {
+      const existing = await db
+        .select()
+        .from(report_images)
+        .where(eq(report_images.report_id, id));
+      const toRemove = existing.filter((r) =>
+        edit.remove_image_ids!.includes(r.id),
+      );
+      if (toRemove.length > 0) {
+        if (r2Configured()) {
+          await deleteObjects(toRemove.map((r) => r.storage_key));
+        }
+        for (const r of toRemove) {
+          await db.delete(report_images).where(eq(report_images.id, r.id));
+        }
+      }
+    }
+
+    if (Array.isArray(edit.add_images) && edit.add_images.length > 0) {
+      const keys = Array.from(new Set(edit.add_images)).filter(
+        (k): k is string => typeof k === "string",
+      );
+      const existing = await db
+        .select()
+        .from(report_images)
+        .where(eq(report_images.report_id, id));
+      if (existing.length + keys.length > MAX_IMAGES_PER_REPORT) {
+        return NextResponse.json(
+          { error: `At most ${MAX_IMAGES_PER_REPORT} photos per report.` },
+          { status: 400 },
+        );
+      }
+      let pos = existing.reduce((m, r) => Math.max(m, r.position + 1), 0);
+      for (const key of keys) {
+        if (!PENDING_KEY_PATTERN.test(key)) {
+          return NextResponse.json(
+            { error: "Invalid image reference." },
+            { status: 400 },
+          );
+        }
+        const meta = await headObject(key);
+        if (
+          !meta ||
+          !isAllowedImageType(meta.contentType) ||
+          meta.sizeBytes <= 0 ||
+          meta.sizeBytes > MAX_IMAGE_BYTES
+        ) {
+          return NextResponse.json(
+            { error: "One or more photos could not be verified." },
+            { status: 400 },
+          );
+        }
+        await db.insert(report_images).values({
+          report_id: id,
+          storage_key: key,
+          content_type: meta.contentType,
+          size_bytes: meta.sizeBytes,
+          position: pos++,
+          kind: "evidence",
+        });
+      }
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to edit report." },
+      { status: 500 },
+    );
+  }
+}
+// === END TEMP-SEED-EDIT ===
 
 export async function PATCH(
   request: NextRequest,
@@ -23,12 +155,22 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  let body: { status?: ReportStatus; purchase_verified?: boolean };
+  let body: {
+    status?: ReportStatus;
+    purchase_verified?: boolean;
+    edit?: AdminEditPayload; // TEMP-SEED-EDIT
+  };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
   }
+
+  // === TEMP-SEED-EDIT: route field/photo edits separately from moderation ===
+  if (body.edit) {
+    return handleAdminEdit(id, body.edit);
+  }
+  // === END TEMP-SEED-EDIT ===
 
   const hasStatus = body.status === "approved" || body.status === "rejected";
   const hasPurchaseToggle = typeof body.purchase_verified === "boolean";

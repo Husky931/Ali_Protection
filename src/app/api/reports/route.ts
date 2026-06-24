@@ -30,7 +30,10 @@ type ReportBody = ReportInsert & {
   no_receipt_reason?: string; // short reason given when no receipt is attached
 };
 
-// Cap the no-receipt reason so a runaway paste can't bloat a row.
+// Bounds for the no-receipt reason. MIN mirrors the form's client gate so a
+// direct API caller can't store a useless 1-char note; MAX stops a runaway
+// paste from bloating the row.
+const MIN_NO_RECEIPT_REASON = 3;
 const MAX_NO_RECEIPT_REASON = 280;
 
 type VerifiedImage = { key: string; contentType: string; sizeBytes: number };
@@ -217,11 +220,11 @@ export async function POST(request: Request) {
   const rawNoReceiptReason =
     typeof body.no_receipt_reason === "string" ? body.no_receipt_reason.trim() : "";
   const hasReceipts = receipts.images.length > 0;
-  if (!hasReceipts && rawNoReceiptReason.length === 0) {
+  if (!hasReceipts && rawNoReceiptReason.length < MIN_NO_RECEIPT_REASON) {
     return NextResponse.json(
       {
         error:
-          "Attach an order receipt, or add a short note explaining why you don't have one.",
+          "Attach an order receipt, or add a short note (a few words) explaining why you don't have one.",
       },
       { status: 400 },
     );

@@ -24,22 +24,41 @@ export async function GET(request: Request) {
       .where(eq(reports.status, "pending"))
       .orderBy(desc(reports.created_at));
 
+    // Fetch image rows independently of R2 so we always know whether a receipt
+    // exists, even when presigning is unavailable (R2 off / object unsignable).
+    const imageRows =
+      data.length > 0
+        ? await db
+            .select()
+            .from(report_images)
+            .where(
+              inArray(
+                report_images.report_id,
+                data.map((report) => report.id),
+              ),
+            )
+            .orderBy(asc(report_images.position))
+        : [];
+
+    // Receipt-row count per report — the authoritative "does a receipt exist"
+    // signal, decoupled from whether we can presign it for preview below. Used
+    // so the moderation UI never claims "no receipt" for a report that has one
+    // we simply couldn't load.
+    const receiptCounts = new Map<string, number>();
+    for (const row of imageRows) {
+      if (row.kind === "receipt") {
+        receiptCounts.set(
+          row.report_id,
+          (receiptCounts.get(row.report_id) ?? 0) + 1,
+        );
+      }
+    }
+
     // Pending evidence images live in the non-public pending/ prefix, so the
     // moderation queue views them through short-lived presigned URLs.
     const imagesByReport = new Map<string, AdminReportImage[]>();
     const receiptsByReport = new Map<string, AdminReportImage[]>();
-    if (data.length > 0 && r2Configured()) {
-      const imageRows = await db
-        .select()
-        .from(report_images)
-        .where(
-          inArray(
-            report_images.report_id,
-            data.map((report) => report.id),
-          ),
-        )
-        .orderBy(asc(report_images.position));
-
+    if (imageRows.length > 0 && r2Configured()) {
       const signed = await Promise.all(
         imageRows.map(async (row) => {
           try {
@@ -134,6 +153,7 @@ export async function GET(request: Request) {
         ...(safe as unknown as Report),
         images: imagesByReport.get(report.id) ?? [],
         receipts: receiptsByReport.get(report.id) ?? [],
+        receipt_count: receiptCounts.get(report.id) ?? 0,
         no_receipt_reason: report.no_receipt_reason,
         has_email: Boolean(report.submitter_email),
         email_verified: report.email_verified,

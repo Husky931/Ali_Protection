@@ -62,8 +62,15 @@ export default async function BrowsePage({
     .where(and(...conditions))
     .orderBy(orderBy);
 
-  const allReports = await db.select().from(reports).where(eq(reports.status, 'approved'));
-  const industries = ['All', ...new Set(allReports.map((r) => r.industry))];
+  // Projected reads only: a bare select(*) here would pull the admin-only /
+  // secret columns (no_receipt_reason, submitter_email, token hashes) into this
+  // public route. Mirror the homepage — narrow industry facet + a count.
+  const industryRows = await db
+    .select({ industry: reports.industry })
+    .from(reports)
+    .where(eq(reports.status, 'approved'));
+  const totalCount = await db.$count(reports, eq(reports.status, 'approved'));
+  const industries = ['All', ...new Set(industryRows.map((r) => r.industry))];
   const imagesByReport = await getEvidenceUrlsByReport(filteredReports.map((r) => r.id));
 
   return (
@@ -71,7 +78,7 @@ export default async function BrowsePage({
       <section style={{ paddingTop: 56, paddingBottom: 30, borderBottom: '1px solid var(--line)' }}>
         <div className="container">
           <h1 style={{ fontSize: 'clamp(32px, 4.5vw, 48px)', letterSpacing: '-.03em', marginTop: 10, lineHeight: 1.05 }}>
-            {allReports.length} reports of bad <span className="marker" style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 600 }}>Alibaba</span> deals.
+            {totalCount} reports of bad <span className="marker" style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 600 }}>Alibaba</span> deals.
           </h1>
           <p className="muted" style={{ fontSize: 17, marginTop: 12, maxWidth: 600 }}>
             Search before you wire.

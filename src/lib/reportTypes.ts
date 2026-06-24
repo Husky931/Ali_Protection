@@ -92,6 +92,10 @@ export type AdminReport = Report & {
   images: AdminReportImage[];
   // Private order receipts (admin-only); never shown on the public page.
   receipts: AdminReportImage[];
+  // Count of receipt rows on file, independent of whether they could be
+  // presigned for preview — lets the UI tell "no receipt" apart from "receipt
+  // exists but couldn't be loaded" (e.g. R2 unavailable).
+  receipt_count: number;
   // Submitter's short "why no receipt" note (null if a receipt was attached).
   // Admin-only — never part of the public `Report` projection.
   no_receipt_reason: string | null;

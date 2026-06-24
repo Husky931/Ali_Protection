@@ -478,6 +478,7 @@ export function ReportForm() {
             disabled={
               status === "loading" ||
               imageBusy ||
+              receiptBusy ||
               !termsAccepted ||
               (turnstileRequired && !turnstileToken)
             }

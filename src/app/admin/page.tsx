@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ChangeEvent, type CSSProperties } from "react";
 
 import { Icon } from "@/components/Navbar";
 import { AdminReport } from "@/lib/reportTypes";
 import { formatMoney, relativeDate } from "@/lib/utils";
+// === TEMP-SEED-EDIT: imports for the in-admin report editor (remove with feature) ===
+import { INDUSTRIES, CURRENCIES, PLATFORMS } from "@/lib/constants";
+import { MAX_IMAGES_PER_REPORT } from "@/lib/images";
+import { prepareImage, type PreparedImage } from "@/lib/clientImage";
+// === END TEMP-SEED-EDIT ===
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -12,6 +17,7 @@ export default function AdminPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null); // TEMP-SEED-EDIT
 
   const fetchReports = async () => {
     if (!password) return;
@@ -302,6 +308,15 @@ export default function AdminPage() {
                       )}
                     </div>
                   </div>
+                ) : report.receipt_count > 0 ? (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em", fontWeight: 600, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon name="lock" size={12} /> Order receipt — on file, preview unavailable ({report.receipt_count})
+                    </div>
+                    <div className="muted small">
+                      A receipt was attached but couldn&rsquo;t be loaded (image storage unavailable). Don&rsquo;t treat this as &ldquo;no receipt&rdquo; — retry later before deciding.
+                    </div>
+                  </div>
                 ) : (
                   <div style={{ marginTop: 16 }}>
                     <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em", fontWeight: 600, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
@@ -331,6 +346,20 @@ export default function AdminPage() {
                   ) : null}
                 </div>
 
+                {/* === TEMP-SEED-EDIT: inline editor for this pending report === */}
+                {editingId === report.id ? (
+                  <ReportEditor
+                    report={report}
+                    password={password}
+                    onCancel={() => setEditingId(null)}
+                    onSaved={() => {
+                      setEditingId(null);
+                      fetchReports();
+                    }}
+                  />
+                ) : null}
+                {/* === END TEMP-SEED-EDIT === */}
+
                 <div className="divider" style={{ margin: "20px 0 18px" }} />
 
                 <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, fontSize: 14, cursor: "pointer" }}>
@@ -345,6 +374,17 @@ export default function AdminPage() {
                 </label>
 
                 <div className="row" style={{ gap: 10 }}>
+                  {/* TEMP-SEED-EDIT */}
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() =>
+                      setEditingId(editingId === report.id ? null : report.id)
+                    }
+                  >
+                    {editingId === report.id ? "Close editor" : "✎ Edit"}
+                  </button>
+                  {/* END TEMP-SEED-EDIT */}
                   <button
                     className="btn"
                     type="button"
@@ -375,3 +415,252 @@ export default function AdminPage() {
     </div>
   );
 }
+
+// === TEMP-SEED-EDIT: temporary in-admin editor for seeded reports ===
+// Lets a moderator fix any field and add/remove evidence photos on a PENDING
+// report before approving it. Remove this whole block (and the tagged bits in
+// AdminPage + the PATCH route) once seeding is done.
+function ReportEditor({
+  report,
+  password,
+  onSaved,
+  onCancel,
+}: {
+  report: AdminReport;
+  password: string;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [f, setF] = useState({
+    seller_name: report.seller_name || "",
+    seller_url: report.seller_url || "",
+    platform: report.platform || "Alibaba.com",
+    product_name: report.product_name || "",
+    product_url: report.product_url || "",
+    quantity: String(report.quantity ?? ""),
+    total_price: String(report.total_price ?? ""),
+    currency: report.currency || "USD",
+    industry: report.industry || "",
+    details: report.details || "",
+  });
+  const [removeIds, setRemoveIds] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<PreparedImage[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const set =
+    (k: keyof typeof f) =>
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setF((prev) => ({ ...prev, [k]: e.target.value }));
+
+  const keptExisting = report.images.filter((im) => !removeIds.includes(im.id));
+  const room = MAX_IMAGES_PER_REPORT - keptExisting.length - newImages.length;
+
+  const addFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const picked = Array.from(files).slice(0, Math.max(0, room));
+    const prepared: PreparedImage[] = [];
+    for (const file of picked) {
+      try {
+        prepared.push(await prepareImage(file));
+      } catch {
+        /* skip unreadable file */
+      }
+    }
+    setNewImages((p) => [...p, ...prepared].slice(0, MAX_IMAGES_PER_REPORT));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setErr("");
+    try {
+      let addKeys: string[] = [];
+      if (newImages.length > 0) {
+        const pres = await fetch("/api/uploads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            files: newImages.map((im) => ({
+              content_type: im.contentType,
+              size_bytes: im.blob.size,
+            })),
+          }),
+        });
+        if (!pres.ok) {
+          throw new Error(
+            (await pres.json().catch(() => null))?.error || "Photo upload failed.",
+          );
+        }
+        const { uploads } = (await pres.json()) as {
+          uploads: { key: string; url: string }[];
+        };
+        await Promise.all(
+          uploads.map((u, i) =>
+            fetch(u.url, {
+              method: "PUT",
+              headers: { "Content-Type": newImages[i].contentType },
+              body: newImages[i].blob,
+            }).then((r) => {
+              if (!r.ok) throw new Error("Photo upload failed.");
+            }),
+          ),
+        );
+        addKeys = uploads.map((u) => u.key);
+      }
+
+      const res = await fetch(`/api/admin/reports/${report.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({
+          edit: {
+            fields: {
+              ...f,
+              quantity: Number(f.quantity),
+              total_price: Number(f.total_price),
+            },
+            add_images: addKeys,
+            remove_image_ids: removeIds,
+          },
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(
+          (await res.json().catch(() => null))?.error || "Save failed.",
+        );
+      }
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Save failed.");
+      setSaving(false);
+    }
+  };
+
+  const removeBtnStyle: CSSProperties = {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+    background: "var(--ink)",
+    color: "var(--bg)",
+    border: "2px solid var(--card)",
+    cursor: "pointer",
+    fontSize: 12,
+    lineHeight: 1,
+    padding: 0,
+  };
+
+  return (
+    <div className="paper" style={{ padding: 18, marginTop: 16, background: "var(--bg-2)" }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>
+        ✎ Edit before approving
+      </div>
+
+      <div className="field">
+        <label className="label">Seller name</label>
+        <input className="input" value={f.seller_name} onChange={set("seller_name")} />
+      </div>
+      <div className="field">
+        <label className="label">Seller URL</label>
+        <input className="input" value={f.seller_url} onChange={set("seller_url")} />
+      </div>
+      <div className="grid-2">
+        <div className="field">
+          <label className="label">Platform</label>
+          <select className="select" value={f.platform} onChange={set("platform")}>
+            {PLATFORMS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label className="label">Industry</label>
+          <select className="select" value={f.industry} onChange={set("industry")}>
+            <option value="">Select...</option>
+            {INDUSTRIES.map((i) => (
+              <option key={i}>{i}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="field">
+        <label className="label">Product name</label>
+        <input className="input" value={f.product_name} onChange={set("product_name")} />
+      </div>
+      <div className="field">
+        <label className="label">Product URL</label>
+        <input className="input" value={f.product_url} onChange={set("product_url")} />
+      </div>
+      <div className="grid-2">
+        <div className="field">
+          <label className="label">Quantity</label>
+          <input type="number" className="input" value={f.quantity} onChange={set("quantity")} />
+        </div>
+        <div className="field">
+          <label className="label">Total paid</label>
+          <input type="number" className="input" value={f.total_price} onChange={set("total_price")} />
+        </div>
+      </div>
+      <div className="grid-2">
+        <div className="field">
+          <label className="label">Currency</label>
+          <select className="select" value={f.currency} onChange={set("currency")}>
+            {CURRENCIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="field">
+        <label className="label">Story / details</label>
+        <textarea className="textarea" style={{ minHeight: 160 }} value={f.details} onChange={set("details")} />
+      </div>
+
+      <div className="field">
+        <label className="label">
+          Evidence photos ({keptExisting.length + newImages.length}/{MAX_IMAGES_PER_REPORT})
+        </label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          {keptExisting.map((im, i) => (
+            <div key={im.id} style={{ position: "relative", width: 90, height: 90 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={im.url} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8, border: "1px solid var(--line-2)", display: "block" }} />
+              <button type="button" aria-label="Remove photo" onClick={() => setRemoveIds((p) => [...p, im.id])} style={removeBtnStyle}>×</button>
+            </div>
+          ))}
+          {newImages.map((im, i) => (
+            <div key={im.id} style={{ position: "relative", width: 90, height: 90 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={im.previewUrl} alt={`New photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8, border: "2px solid var(--accent)", display: "block" }} />
+              <button type="button" aria-label="Remove new photo" onClick={() => setNewImages((p) => p.filter((x) => x.id !== im.id))} style={removeBtnStyle}>×</button>
+            </div>
+          ))}
+          {room > 0 ? (
+            <label style={{ width: 90, height: 90, borderRadius: 8, border: "1px dashed var(--line-2)", background: "var(--card)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", color: "var(--muted)", fontSize: 11 }}>
+              <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+              <Icon name="camera" size={16} /> Add
+            </label>
+          ) : null}
+        </div>
+      </div>
+
+      {err ? (
+        <div style={{ marginTop: 4, marginBottom: 10, color: "var(--danger)", fontSize: 13 }}>{err}</div>
+      ) : null}
+
+      <div className="row" style={{ gap: 10, marginTop: 8 }}>
+        <button className="btn btn-primary" type="button" onClick={save} disabled={saving}>
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+        <button className="btn btn-ghost" type="button" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+// === END TEMP-SEED-EDIT ===
