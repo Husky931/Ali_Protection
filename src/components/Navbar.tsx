@@ -55,7 +55,7 @@ export function Footer() {
           <FooterCol title="The site" links={[
             { label: 'Browse reports', href: '/reports' },
             { label: 'Submit a report', href: '/submit-report' },
-            { label: 'How it works', href: '/#how' },
+            // { label: 'How it works', href: '/#how' },
           ]} />
           <FooterCol title="About" links={[
             { label: 'Why this exists', href: '/#why' },
