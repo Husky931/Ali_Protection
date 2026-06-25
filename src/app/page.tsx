@@ -32,6 +32,7 @@ export default async function LandingPage() {
       <Hero totalCount={totalReportsCount} />
       <WhySection />
       {/* <HowItWorks /> */}
+      <FAQSection />
       <FeedPreview reports={recentReports as Report[]} imagesByReport={imagesByReport} />
       <CTAStrip />
     </div>
@@ -66,7 +67,7 @@ function Hero({ totalCount }: { totalCount: number }) {
             fontSize: 19, color: 'var(--ink-2)',
             marginTop: 22, maxWidth: 520, lineHeight: 1.5,
           }}>
-            The image on the right tells the whole story. Real Alibaba seller screenshot who has multiple 1 star reviews which are not shown in the overall view.
+            A community list of reported Alibaba scammers, built from real buyer reports. The image on the right tells the whole story: a real Alibaba seller with multiple 1-star reviews that the overall rating hides.
           </p>
           <div style={{ display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
             <Link href="/submit-report" className="btn btn-accent">
@@ -117,6 +118,73 @@ function WhySection() {
             </Link>
           </p>
           <p style={{ marginTop: 12, marginBottom: 0, fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--muted)', fontStyle: 'normal' }}>— A buyer&rsquo;s report, published on alibabascammer.com</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FAQSection() {
+  const faqs = [
+    {
+      q: 'Is Alibaba a scam?',
+      a: (
+        <>
+          Alibaba itself is a legitimate marketplace, but it&rsquo;s full of individual scam sellers. The risk isn&rsquo;t the platform &mdash; it&rsquo;s the supplier you wire money to. That&rsquo;s why buyers search a seller&rsquo;s name before ordering, and why we keep a public{' '}
+          <Link href="/reports" className="btn-link">list of reported Alibaba scammers</Link>.
+        </>
+      ),
+    },
+    {
+      q: 'How do I check if an Alibaba seller is a scammer?',
+      a: (
+        <>
+          Search the seller&rsquo;s company name on our{' '}
+          <Link href="/reports" className="btn-link">Alibaba scammer list</Link>{' '}
+          first &mdash; it collects real buyer reports, so if someone&rsquo;s been burned by that seller you&rsquo;ll see it. Then read{' '}
+          <Link href="/guides/how-to-avoid-alibaba-scams" className="btn-link">how to avoid Alibaba scams</Link>{' '}
+          for the red flags to check before you pay.
+        </>
+      ),
+    },
+    {
+      q: 'How do I report an Alibaba scammer?',
+      a: (
+        <>
+          <Link href="/submit-report" className="btn-link">Submit a report</Link>{' '}
+          &mdash; it&rsquo;s anonymous and takes about five minutes. A moderator reviews every submission before it&rsquo;s published, so your report becomes a public warning for the next buyer who searches that seller.
+        </>
+      ),
+    },
+    {
+      q: 'I got scammed on Alibaba — what now?',
+      a: (
+        <>
+          Stop sending money and document everything. Our guide on{' '}
+          <Link href="/guides/is-alibaba-safe" className="btn-link">whether Alibaba is safe</Link>{' '}
+          walks through Trade Assurance disputes and chargebacks. Then{' '}
+          <Link href="/submit-report" className="btn-link">report the seller</Link>{' '}
+          so other buyers can find your account when they search.
+        </>
+      ),
+    },
+  ];
+  return (
+    <section id="faq" style={{ background: 'var(--bg-2)', borderBottom: '1px solid var(--line)' }}>
+      <div className="container">
+        <div style={{ maxWidth: 580, marginBottom: 36 }}>
+          <span className="eyebrow">FAQ</span>
+          <h2 style={{ fontSize: 32, marginTop: 12, letterSpacing: '-.025em', lineHeight: 1.15 }}>
+            Alibaba scams, answered.
+          </h2>
+        </div>
+        <div className="stack" style={{ gap: 0 }}>
+          {faqs.map((f) => (
+            <div key={f.q} style={{ borderTop: '1px solid var(--line)', padding: '22px 0' }}>
+              <h3 style={{ fontSize: 18, letterSpacing: '-.015em', marginBottom: 8 }}>{f.q}</h3>
+              <p className="muted" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.6, maxWidth: 720 }}>{f.a}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

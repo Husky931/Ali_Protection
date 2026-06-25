@@ -9,6 +9,7 @@ import { getEvidenceUrlsByReport } from '@/lib/reportImages';
 import { SearchBox, ReportRow } from '@/components/SearchBox';
 import { SortSelect } from '@/components/SortSelect';
 import { Icon } from '@/components/Navbar';
+import { absoluteUrl } from '@/lib/site';
 import Link from 'next/link';
 
 export async function generateMetadata({
@@ -73,12 +74,35 @@ export default async function BrowsePage({
   const industries = ['All', ...new Set(industryRows.map((r) => r.industry))];
   const imagesByReport = await getEvidenceUrlsByReport(filteredReports.map((r) => r.id));
 
+  // Only the canonical, unfiltered view is indexable (see generateMetadata). Emit
+  // ItemList schema there only — faceted/search permutations are noindex thin
+  // duplicates and shouldn't claim to be "the list" in structured data.
+  const hasParams = Boolean(q || (industry && industry !== 'All') || sort);
+  const itemListJsonLd = hasParams ? null : {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Alibaba Scammer List — Reported Scam Sellers',
+    numberOfItems: filteredReports.length,
+    itemListElement: filteredReports.map((r, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: absoluteUrl(`/reports/${r.slug}`),
+      name: r.seller_name,
+    })),
+  };
+
   return (
     <div className="page">
+      {itemListJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd).replace(/</g, '\\u003c') }}
+        />
+      )}
       <section style={{ paddingTop: 56, paddingBottom: 30, borderBottom: '1px solid var(--line)' }}>
         <div className="container">
           <h1 style={{ fontSize: 'clamp(32px, 4.5vw, 48px)', letterSpacing: '-.03em', marginTop: 10, lineHeight: 1.05 }}>
-            {totalCount} reports of bad <span className="marker" style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 600 }}>Alibaba</span> deals.
+            <span className="marker" style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 600 }}>Alibaba</span> Scammer List — {totalCount} reported scam sellers
           </h1>
           <p className="muted" style={{ fontSize: 17, marginTop: 12, maxWidth: 600 }}>
             Search before you wire.
